@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> Movie App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap"
+        rel="stylesheet" />
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4221/4221419.png">
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <!-- POPCORN INTRO -->
+    <div id="intro-screen">
+        <canvas id="popcorn-canvas"></canvas>
+
+        <div class="bucket-container">
+            <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 38 L22 102 Q23 110 33 110 L67 110 Q77 110 78 102 L88 38 Z" fill="#a93226" />
+                <path d="M16 38 L26 102 Q26.5 106 29 108 L25 108 Q22 108 21.5 104 L11.5 38Z" fill="#e74c3c"
+                    opacity="0.55" />
+                <path d="M44 38 L46 110 L40 110 L38 38Z" fill="#e74c3c" opacity="0.4" />
+                <path d="M70 38 L80 102 Q80.5 106 79 108 L76 108 Q77.5 106 77 103 L67 38Z" fill="#e74c3c"
+                    opacity="0.55" />
+                <rect x="9" y="32" width="82" height="10" rx="4" fill="#922b21" />
+                <rect x="9" y="32" width="82" height="5" rx="3" fill="#ec7063" />
+                <ellipse cx="50" cy="32" rx="42" ry="14" fill="#f9e4a0" />
+                <circle cx="28" cy="26" r="9" fill="#f5d47a" />
+                <circle cx="44" cy="20" r="10" fill="#fdf3c0" />
+                <circle cx="60" cy="22" r="9" fill="#f5d47a" />
+                <circle cx="74" cy="27" r="8" fill="#faf0cc" />
+                <circle cx="36" cy="17" r="7" fill="#fdf3c0" />
+                <circle cx="52" cy="14" r="8" fill="#f9e4a0" />
+                <circle cx="66" cy="16" r="7" fill="#fdf3c0" />
+                <text x="50" y="80" text-anchor="middle" font-family="'Bebas Neue', sans-serif" font-size="11"
+                    fill="rgba(255,255,255,0.6)" letter-spacing="1.5">OMDB</text>
+            </svg>
+        </div>
+
+        <div id="intro-title">MOVIE<span>APP</span></div>
+    </div>
+    <header>
+        <a class="logo" href="#" onclick="resetToHome()">
+            <span class="logo-dot"></span>MOVIE<span>APP</span>
+        </a>
+
+    </header>
+
+
+    <section id="hero">
+        <p class="hero-eyebrow">The OMDB'S DATABASE</p>
+        <h1 class="hero-title">Every Film.<br><em>One Search.</em></h1>
+        <p class="hero-sub">Discover details, ratings, and more for any movie or series.</p>
+
+        <div class="search-wrap">
+            <div class="search-row">
+                <input id="q" type="text" placeholder="Title, keyword, or director…" autocomplete="off" />
+                <button id="btn-search" onclick="doSearch(1)">SEARCH</button>
+            </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Type</label>
+                    <select id="f-type">
+                        <option value="">All</option>
+                        <option value="movie">Movie</option>
+                        <option value="series">Series</option>
+                        <option value="episode">Episode</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Year</label>
+                    <select id="f-year">
+                        <option value="">Any</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="results-section" hidden>
+        <div class="results-header">
+            <span class="results-title" id="results-title">RESULTS</span>
+            <span class="results-count" id="results-count"></span>
+        </div>
+        <div id="grid"></div>
+        <div class="pagination" id="pagination"></div>
+    </section>
+
+
+    <div id="state-area"></div>
+
+
+    <div id="modal-overlay" role="dialog" aria-modal="true">
+        <div id="modal">
+            <button id="btn-close" aria-label="Close" onclick="closeModal()">✕</button>
+            <div class="modal-inner" id="modal-inner">
+
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p class="footer">🎥 Powered by Yelda Kuru</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

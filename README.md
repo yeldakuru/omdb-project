@@ -2,7 +2,7 @@
 ### Live Deployment
 I hosted the backend on Render's free tier. Due to the cold start nature of free instances, the initial request might take a few seconds to wake up the server. However, I’ve optimized the performance by implementing a server-side caching system to ensure that once it's up, subsequent data retrieval is highly efficient.
 The backend service is [Live on Render](https://omdb-project-j6ae.onrender.com).
-Frontend [GitHub Pages deployment] (https://yeldakuru.github.io/omdb-project/)
+Frontend [GitHub Pages deployment](https://yeldakuru.github.io/omdb-project/)
 
 ## Installed Packages
 `npm init -y`

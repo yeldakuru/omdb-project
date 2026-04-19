@@ -154,7 +154,7 @@ function doSearch(page = 1) {
     currentPage = page;
     lastQuery = { q, type, year };
 
-    // URL Sync
+
     const params = new URLSearchParams({ q, page: currentPage });
     if (type) params.set('type', type);
     if (year) params.set('year', year);
@@ -176,6 +176,7 @@ async function fetchResults(q, type, year, page) {
 
     // Render Backend URL (Caching ve /movies endpoint)
     const BACKEND_URL = "https://omdb-project-j6ae.onrender.com/movies";
+    //const BACKEND_URL http://localhost:5000/movies;
 
     try {
         const res = await fetch(`${BACKEND_URL}?title=${encodeURIComponent(q)}&type=${type}&year=${year}&page=${page}`);
@@ -290,9 +291,10 @@ async function openModal(imdbID) {
     inner.innerHTML = `<div style="padding:60px;text-align:center;width:100%"><div class="loader"><span></span><span></span><span></span></div></div>`;
 
     try {
-        // Modal detayları için backend'de ayrı bir route yoksa direkt OMDB'ye gidebilir 
-        // veya backend'e bir detail route'u ekleyebilirsin. Şimdilik genel yapı:
+
         const res = await fetch(`https://omdb-project-j6ae.onrender.com/movies?id=${imdbID}`);
+        // const res = await fetch(`http://localhost:5000/movies?id=${imdbID}`);
+
         const d = await res.json();
 
         const hasPoster = d.Poster && d.Poster !== 'N/A';
@@ -358,4 +360,5 @@ function resetToHome() {
     document.getElementById('f-type').value = p.get('type') || '';
     document.getElementById('f-year').value = p.get('year') || '';
     doSearch(parseInt(p.get('page'), 10) || 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 })();

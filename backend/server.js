@@ -6,46 +6,50 @@ require("dotenv").config();
 const app = express();
 app.use(cors());
 
-const API_KEY = process.env.API_KEY;
-const API_BASE = process.env.API_BASE;
-
 // BASİT CACHING OBJESİ
 const cache = {};
 
-app.get("/movies", async (req, res) => {
+// Root path 
+app.get('/', (req, res) => {
+    res.send("Movie API is running!");
+});
+
+app.get('/movies', async (req, res) => {
+    const { title, type, year, page, id } = req.query;
+    const API_KEY = process.env.API_KEY;
+
+    // Cache Key oluşturma (Aynı aramayı tekrar yapmamak için)
+    const cacheKey = id || `${title}-${type}-${year}-${page}`;
+
+    // 1. Önce Cache'e Bak: Eğer bu arama daha önce yapıldıysa direkt oradan dön
+    if (cache[cacheKey]) {
+        console.log("Serving from cache:", cacheKey);
+        return res.json(cache[cacheKey]);
+    }
+
+    let url = `http://www.omdbapi.com/?apikey=${API_KEY}`;
+
+    if (id) {
+        url += `&i=${id}&plot=full`;
+    } else {
+        if (title) url += `&s=${encodeURIComponent(title)}`;
+        if (type) url += `&type=${type}`;
+        if (year) url += `&y=${year}`;
+        if (page) url += `&page=${page}`;
+    }
+
     try {
-        const { title, type, year, page } = req.query;
+        console.log("Fetching from OMDB:", url);
+        const response = await axios.get(url);
 
-        if (!title) return res.status(400).json({ error: "Title is required" });
-
-        // Cache anahtarı oluştur (Örn: "inception-movie-2010-1")
-        const cacheKey = `${title}-${type || ''}-${year || ''}-${page || 1}`;
-
-        // EĞER CACHE'DE VARSA, API'YE GİTMEDEN DÖN
-        if (cache[cacheKey]) {
-            console.log("Serving from cache:", cacheKey);
-            return res.json(cache[cacheKey]);
+        // 2. Cache'e Kaydet: Gelen veriyi hafızaya al
+        if (response.data.Response === "True") {
+            cache[cacheKey] = response.data;
         }
 
-        const response = await axios.get(API_BASE, {
-            params: {
-                apikey: API_KEY,
-                s: title, // 't' yerine 's' kullanarak tüm listeyi alıyoruz
-                type: type,
-                y: year,
-                page: page || 1
-            }
-        });
-
-        if (response.data.Response === "False") {
-            return res.status(404).json({ error: response.data.Error });
-        }
-
-        // VERİYİ CACHE'E EKLE VE GÖNDER
-        cache[cacheKey] = response.data;
         res.json(response.data);
-
-    } catch (err) {
+    } catch (error) {
+        console.error("Error details:", error.message);
         res.status(500).json({ error: "Server error" });
     }
 });

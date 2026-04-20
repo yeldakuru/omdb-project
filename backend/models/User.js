@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema({
             title: String,
             poster: String,
             year: String,
-            type: String,
-            genre: String
+            type: String
+
         }
     ],
 
@@ -32,8 +32,8 @@ const userSchema = new mongoose.Schema({
             title: String,
             poster: String,
             year: String,
-            type: String,
-            genre: String
+            type: String
+
         }]
 }, { timestamps: true }); // createdAt ve updatedAt alanları otomatik olarak almak için
 

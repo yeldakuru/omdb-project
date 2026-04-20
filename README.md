@@ -11,8 +11,9 @@ Frontend [GitHub Pages deployment](https://yeldakuru.github.io/omdb-project/)
 * `npm i express cors axios`
 * **axios**: To make HTTP requests to the OMDB API.
 * **dotenv**: To securely manage the API Key using environment variables.
-`npm i dotenv` 
-
+`npm i dotenv`  
+* **MONGODB**: `npm install mongodb` 
+* `npm i express cors axios mongoose bcryptjs jsonwebtoken dotenv`
 
 ##  Key Features
 * **Deployed on Render:** The backend is hosted and running live on the Render platform.

@@ -1,7 +1,9 @@
-import { fetchMovies, fetchMovieById } from "../controllers/contentController";
-const router = require("express").Router();
+import { fetchMovies, fetchMovieById } from "../controllers/contentController.js";
+import express from "express";
+
+const router = express.Router();
 
 router.get("/", fetchMovies);
 router.get("/:id", fetchMovieById);
 
-module.exports = router;
+export default router;

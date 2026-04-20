@@ -1,13 +1,13 @@
 const cache = {};
 
-function setCache(key, data, ttl = 60000) {
+export const setCache = (key, data, ttl = 60000) => {
     cache[key] = {
         data,
         expiry: Date.now() + ttl
     };
-}
+};
 
-function getCache(key) {
+export const getCache = (key) => {
     const item = cache[key];
 
     if (!item) return null;
@@ -20,4 +20,3 @@ function getCache(key) {
     return item.data;
 }
 
-module.exports = { setCache, getCache };

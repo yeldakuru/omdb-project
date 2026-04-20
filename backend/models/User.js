@@ -37,4 +37,5 @@ const userSchema = new mongoose.Schema({
         }]
 }, { timestamps: true }); // createdAt ve updatedAt alanları otomatik olarak almak için
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

@@ -126,29 +126,54 @@ export const getTop10 = async (req, res) => {
     const API_KEY = process.env.API_KEY;
     const cacheKey = "top10";
 
-    if (cache[cacheKey]) {
+    const cached = getCache(cacheKey);
+    if (cached) {
         console.log("Top10 from cache");
-        return res.json(cache[cacheKey]);
+        return res.json(cached);
     }
 
     try {
 
-        const requests = TOP_IDS.map(id =>
-            axios.get(`http://www.omdbapi.com/?apikey=${API_KEY}&i=${id}&plot=short`)
+        const searchRes = await axios.get(process.env.API_BASE, {
+            params: {
+                apikey: API_KEY,
+                s: "movie", // geniş sonuç verir
+                type: "movie",
+                page: 1
+            }
+        });
+
+        if (!searchRes.data.Search) {
+            return res.status(404).json({ error: "No data found" });
+        }
+
+
+        const detailRequests = searchRes.data.Search.map(movie =>
+            axios.get(process.env.API_BASE, {
+                params: {
+                    apikey: API_KEY,
+                    i: movie.imdbID
+                }
+            })
                 .then(r => r.data)
                 .catch(() => null)
         );
 
-        const results = await Promise.all(requests); // paralel istek
-        const content = results.filter(m => m && m.Response === "True");
+        const details = await Promise.all(detailRequests);
 
-        // cache for 1 hour, top10 doesn't change often
-        cache[cacheKey] = content;
-        setCache(cacheKey, content, 3600000);
+        // 3️⃣ Geçerli olanları al + rating'e göre sırala
+        const sorted = details
+            .filter(m => m && m.imdbRating && m.imdbRating !== "N/A")
+            .sort((a, b) => parseFloat(b.imdbRating) - parseFloat(a.imdbRating))
+            .slice(0, 10);
 
-        res.json(content);
+        // 4️⃣ Cache
+        setCache(cacheKey, sorted, 3600000); // 1 saat
+
+        res.json(sorted);
+
     } catch (err) {
-        console.error("Top10 error:", err.message);
+        console.error("Top10 error:", err.response?.data || err.message);
         res.status(500).json({ error: "Server error" });
     }
 };

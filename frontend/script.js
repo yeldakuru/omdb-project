@@ -1,4 +1,18 @@
-// STATE
+import {
+    getTop10,
+    searchcontents,
+    getcontentById,
+    getAutocompleteSuggestions,
+    loginUser,
+    registerUser,
+    fetchWatchlist,
+    fetchWatched,
+    addToWatchlist,
+    removeFromWatchlist,
+    markAsWatched,
+    removeFromWatched
+} from "./api.js";
+
 let currentPage = 1;
 let totalResults = 0;
 let currentUser = null;
@@ -495,19 +509,25 @@ async function loadTop10() {
 
     try {
         const contents = await getTop10();
+
+        console.log("Top10 data:", contents); // DEBUG
+
         if (!Array.isArray(contents) || contents.length === 0) {
             section.style.display = "none";
             return;
         }
+
         top10contents = contents;
         renderSlider();
         startSliderAuto();
+
     } catch (err) {
-        console.error("Top10 failed:", err.message);
+        console.error("Top10 FULL ERROR:", err);
+        console.error("Backend message:", err.response?.data);
+
         section.style.display = "none";
     }
 }
-
 function renderSlider() {
     const track = document.getElementById("slider-track");
     if (!track) return;

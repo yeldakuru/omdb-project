@@ -85,3 +85,39 @@ export const fetchMovieById = async (req, res) => {
         return res.status(500).json({ error: "Server error" });
     }
 };
+
+export const getAutocomplete = async (req, res) => {
+    const { q } = req.query;
+
+    // 3 harf sınırı API'yi boşuna yormaz, profesyonel bir harekettir
+    if (!q || q.length < 3) return res.json([]);
+
+    const cacheKey = `auto-${q.toLowerCase()}`;
+    const cached = getCache(cacheKey);
+
+    if (cached) return res.json(cached);
+
+    try {
+        const response = await axios.get(process.env.API_BASE, {
+            params: {
+                apikey: process.env.API_KEY,
+                s: q
+            }
+        });
+
+        const results = response.data.Search
+            ? response.data.Search.slice(0, 5).map(m => ({
+                title: m.Title,
+                year: m.Year,
+                imdbID: m.imdbID,
+                poster: m.Poster
+            }))
+            : [];
+
+        setCache(cacheKey, results, 300000);
+        res.json(results);
+
+    } catch (err) {
+        res.status(500).json({ error: "Autocomplete server error" });
+    }
+};

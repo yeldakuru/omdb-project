@@ -96,18 +96,3 @@ async function removeFromWatched(imdbID) {
     return handleResponse(api.delete(`/user/watched/${imdbID}`));
 }
 
-export {
-    searchcontents,
-    getcontentById,
-    getAutocompleteSuggestions,
-    getTop10,
-    loginUser,
-    registerUser,
-    getCurrentUser,
-    fetchWatchlist,
-    addToWatchlist,
-    removeFromWatchlist,
-    fetchWatched,
-    markAsWatched,
-    removeFromWatched
-};

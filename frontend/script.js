@@ -1,17 +1,4 @@
-import {
-    getTop10,
-    searchcontents,
-    getcontentById,
-    getAutocompleteSuggestions,
-    loginUser,
-    registerUser,
-    fetchWatchlist,
-    fetchWatched,
-    addToWatchlist,
-    removeFromWatchlist,
-    markAsWatched,
-    removeFromWatched
-} from "./api.js";
+
 
 let currentPage = 1;
 let totalResults = 0;

@@ -2,7 +2,7 @@
 const BASE_URL = "https://omdb-project-j6ae.onrender.com/api";
 
 function authHeaders() {
-    const token = localStorage.getItem("movieapp_token");
+    const token = localStorage.getItem("contentapp_token");
     return token
         ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
         : { "Content-Type": "application/json" };
@@ -14,16 +14,16 @@ async function request(path, options = {}) {
 
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Sunucudan beklenen JSON yanıtı gelmedi. (Rota hatası olabilir)");
+        throw new Error("error: expected JSON response");
     }
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "İşlem başarısız oldu");
+    if (!res.ok) throw new Error(data.error || "error: request failed");
     return data;
 }
 
 
-async function searchMovies({ title, type = "", year = "", page = 1 }) {
+async function searchcontents({ title, type = "", year = "", page = 1 }) {
     const params = new URLSearchParams({ title, page });
     if (type) params.set("type", type);
     if (year) params.set("year", year);
@@ -31,7 +31,7 @@ async function searchMovies({ title, type = "", year = "", page = 1 }) {
     return request(`/content/?${params}`);
 }
 
-async function getMovieById(imdbID) {
+async function getcontentById(imdbID) {
 
     return request(`/content/${imdbID}`);
 }

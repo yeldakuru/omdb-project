@@ -121,3 +121,34 @@ export const getAutocomplete = async (req, res) => {
         res.status(500).json({ error: "Autocomplete server error" });
     }
 };
+
+export const getTop10 = async (req, res) => {
+    const API_KEY = process.env.API_KEY;
+    const cacheKey = "top10";
+
+    if (cache[cacheKey]) {
+        console.log("Top10 from cache");
+        return res.json(cache[cacheKey]);
+    }
+
+    try {
+
+        const requests = TOP_IDS.map(id =>
+            axios.get(`http://www.omdbapi.com/?apikey=${API_KEY}&i=${id}&plot=short`)
+                .then(r => r.data)
+                .catch(() => null)
+        );
+
+        const results = await Promise.all(requests); // paralel istek
+        const content = results.filter(m => m && m.Response === "True");
+
+        // cache for 1 hour, top10 doesn't change often
+        cache[cacheKey] = content;
+        setCache(cacheKey, content, 3600000);
+
+        res.json(content);
+    } catch (err) {
+        console.error("Top10 error:", err.message);
+        res.status(500).json({ error: "Server error" });
+    }
+};

@@ -1,5 +1,4 @@
 
-import axios from "axios";
 
 const api = axios.create({
     baseURL: "https://omdb-project-j6ae.onrender.com/api",

@@ -1,120 +1,97 @@
 
-const BASE_URL = "https://omdb-project-j6ae.onrender.com/api";
+import axios from "axios";
 
-function authHeaders() {
-    const token = localStorage.getItem("contentapp_token");
-    return token
-        ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-        : { "Content-Type": "application/json" };
-}
-
-async function request(path, options = {}) {
-    const res = await fetch(`${BASE_URL}${path}`, options);
-
-
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("error: expected JSON response");
+const api = axios.create({
+    baseURL: "https://omdb-project-j6ae.onrender.com/api",
+    headers: {
+        "Content-Type": "application/json"
     }
+});
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "error: request failed");
-    return data;
-}
+// Her istekte güncel token'ı eklemek için Interceptor kullanıyoruz
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("contentapp_token");
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
+const handleResponse = async (requestPromise) => {
+    try {
+        const response = await requestPromise;
+        return response.data;
+    } catch (error) {
+        // Backend'den gelen hata mesajını yakala
+        const message = error.response?.data?.error || error.message || "Server Error";
+        throw new Error(message);
+    }
+};
 
 async function searchcontents({ title, type = "", year = "", page = 1 }) {
-    const params = new URLSearchParams({ title, page });
-    if (type) params.set("type", type);
-    if (year) params.set("year", year);
-
-    return request(`/content/?${params}`);
+    return handleResponse(api.get("/content/", {
+        params: { title, type, year, page }
+    }));
 }
 
 async function getcontentById(imdbID) {
-
-    return request(`/content/${imdbID}`);
+    return handleResponse(api.get(`/content/${imdbID}`));
 }
 
 async function getAutocompleteSuggestions(query) {
-    const params = new URLSearchParams({ q: query });
-    return request(`/content/autocomplete?${params}`);
+    return handleResponse(api.get("/content/autocomplete", {
+        params: { q: query }
+    }));
 }
 
 async function getTop10() {
-
-    return request("/content/getTop10");
+    return handleResponse(api.get("/content/getTop10"));
 }
 
-
-// AUTH
-
 async function loginUser(email, password) {
-    return request("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password })
-    });
+    return handleResponse(api.post("/auth/login", { email, password }));
 }
 
 async function registerUser(username, email, password) {
-    return request("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ username, email, password })
-    });
+    return handleResponse(api.post("/auth/register", { username, email, password }));
 }
 
 async function getCurrentUser() {
-    return request("/auth/me", { headers: authHeaders() });
+    return handleResponse(api.get("/auth/me"));
 }
 
-
-
 async function fetchWatchlist() {
-    return request("/user/watchlist", { headers: authHeaders() });
+    return handleResponse(api.get("/user/watchlist"));
 }
 
 async function addToWatchlist(content) {
-    return request("/user/watchlist", {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({
-            imdbID: content.imdbID,
-            title: content.Title || content.title,
-            poster: content.Poster || content.poster,
-            year: content.Year || content.year,
-            type: content.Type || content.type
-        })
-    });
+    return handleResponse(api.post("/user/watchlist", {
+        imdbID: content.imdbID,
+        title: content.Title || content.title,
+        poster: content.Poster || content.poster,
+        year: content.Year || content.year,
+        type: content.Type || content.type
+    }));
 }
 
 async function removeFromWatchlist(imdbID) {
-    return request(`/user/watchlist/${imdbID}`, {
-        method: "DELETE",
-        headers: authHeaders()
-    });
+    return handleResponse(api.delete(`/user/watchlist/${imdbID}`));
 }
 
 async function fetchWatched() {
-    return request("/user/watched", { headers: authHeaders() });
+    return handleResponse(api.get("/user/watched"));
 }
 
 async function markAsWatched(content) {
-    return request("/user/watched", {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({
-            imdbID: content.imdbID,
-            title: content.Title || content.title,
-            poster: content.Poster || content.poster,
-            year: content.Year || content.year,
-            type: content.Type || content.type
-        })
-    });
+    return handleResponse(api.post("/user/watched", {
+        imdbID: content.imdbID,
+        title: content.Title || content.title,
+        poster: content.Poster || content.poster,
+        year: content.Year || content.year,
+        type: content.Type || content.type
+    }));
 }
 
 async function removeFromWatched(imdbID) {
-    return request(`/user/watched/${imdbID}`, {
-        method: "DELETE",
-        headers: authHeaders()
-    });
+    return handleResponse(api.delete(`/user/watched/${imdbID}`));
 }

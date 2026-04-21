@@ -1,11 +1,6 @@
-// api.js
-// All backend communication lives here.
-// script.js should never call fetch() directly — use these functions instead.
 
-const BASE_URL = "https://omdb-project-j6ae.onrender.com";
-// const BASE_URL = "http://localhost:5000";
+const BASE_URL = "https://omdb-project-j6ae.onrender.com/api";
 
-// attaches the JWT token to requests that need auth
 function authHeaders() {
     const token = localStorage.getItem("movieapp_token");
     return token
@@ -13,54 +8,50 @@ function authHeaders() {
         : { "Content-Type": "application/json" };
 }
 
-// generic helper — throws on non-ok so callers don't have to check res.ok every time
 async function request(path, options = {}) {
     const res = await fetch(`${BASE_URL}${path}`, options);
+
+
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Sunucudan beklenen JSON yanıtı gelmedi. (Rota hatası olabilir)");
+    }
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Request failed");
+    if (!res.ok) throw new Error(data.error || "İşlem başarısız oldu");
     return data;
 }
 
-// =====================
-// MOVIES
-// =====================
 
 async function searchMovies({ title, type = "", year = "", page = 1 }) {
     const params = new URLSearchParams({ title, page });
     if (type) params.set("type", type);
     if (year) params.set("year", year);
-    return request(`/movies?${params}`);
+
+    return request(`/content/?${params}`);
 }
 
 async function getMovieById(imdbID) {
-    return request(`/movies?id=${imdbID}`);
-}
 
-// =====================
-// AUTOCOMPLETE
-// =====================
+    return request(`/content/${imdbID}`);
+}
 
 async function getAutocompleteSuggestions(query) {
     const params = new URLSearchParams({ q: query });
-    return request(`/autocomplete?${params}`);
+    return request(`/content/autocomplete?${params}`);
 }
-
-// =====================
-// TOP 10
-// =====================
 
 async function getTop10() {
-    return request("/top10");
+
+    return request("/content/getTop10");
 }
 
-// =====================
+
 // AUTH
-// =====================
 
 async function loginUser(email, password) {
     return request("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
     });
 }
@@ -68,7 +59,6 @@ async function loginUser(email, password) {
 async function registerUser(username, email, password) {
     return request("/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password })
     });
 }
@@ -77,16 +67,14 @@ async function getCurrentUser() {
     return request("/auth/me", { headers: authHeaders() });
 }
 
-// =====================
-// WATCHLIST
-// =====================
+
 
 async function fetchWatchlist() {
-    return request("/watchlist", { headers: authHeaders() });
+    return request("/user/watchlist", { headers: authHeaders() });
 }
 
 async function addToWatchlist(content) {
-    return request("/watchlist", {
+    return request("/user/watchlist", {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
@@ -100,22 +88,18 @@ async function addToWatchlist(content) {
 }
 
 async function removeFromWatchlist(imdbID) {
-    return request(`/watchlist/${imdbID}`, {
+    return request(`/user/watchlist/${imdbID}`, {
         method: "DELETE",
         headers: authHeaders()
     });
 }
 
-// =====================
-// WATCHED
-// =====================
-
 async function fetchWatched() {
-    return request("/watched", { headers: authHeaders() });
+    return request("/user/watched", { headers: authHeaders() });
 }
 
 async function markAsWatched(content) {
-    return request("/watched", {
+    return request("/user/watched", {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
@@ -129,7 +113,7 @@ async function markAsWatched(content) {
 }
 
 async function removeFromWatched(imdbID) {
-    return request(`/watched/${imdbID}`, {
+    return request(`/user/watched/${imdbID}`, {
         method: "DELETE",
         headers: authHeaders()
     });

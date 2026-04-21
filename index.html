@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title> Movie App</title>
+    <title>Movie App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,7 +15,8 @@
 </head>
 
 <body>
-    <!-- POPCORN INTRO -->
+
+
     <div id="intro-screen">
         <canvas id="popcorn-canvas"></canvas>
 
@@ -44,24 +45,53 @@
 
         <div id="intro-title">MOVIE<span>APP</span></div>
     </div>
+
+
     <header>
         <a class="logo" href="#" onclick="resetToHome()">
             <span class="logo-dot"></span>MOVIE<span>APP</span>
         </a>
 
+        <div class="header-right">
+
+            <button id="auth-btn" onclick="openAuthModal('login')">
+                <span>Sign In</span>
+            </button>
+
+
+            <div id="user-menu" onclick="toggleUserDropdown()">
+                <div class="user-avatar" id="user-avatar">?</div>
+                <span id="user-greeting">User</span>
+
+                <div id="user-dropdown">
+                    <button class="dropdown-item" onclick="openMyLists(); event.stopPropagation()">
+                        My Lists
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item danger" onclick="logout(); event.stopPropagation()">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
     </header>
 
-
+    <!--search-->
     <section id="hero">
-        <p class="hero-eyebrow">The OMDB'S DATABASE</p>
+        <p class="hero-eyebrow">The OMDB's Database</p>
         <h1 class="hero-title">Every Film.<br><em>One Search.</em></h1>
         <p class="hero-sub">Discover details, ratings, and more for any movie or series.</p>
 
         <div class="search-wrap">
             <div class="search-row">
-                <input id="q" type="text" placeholder="Title, keyword, or director…" autocomplete="off" />
+                <div class="search-input-wrap">
+                    <input id="q" type="text" placeholder="Title, keyword, or director..." autocomplete="off"
+                        oninput="onSearchInput()" />
+                    <div id="autocomplete-dropdown"></div>
+                </div>
                 <button id="btn-search" onclick="doSearch(1)">SEARCH</button>
             </div>
+
             <div class="filters">
                 <div class="filter-group">
                     <label>Type</label>
@@ -82,7 +112,20 @@
         </div>
     </section>
 
+    <!-- top 10 -->
+    <section id="top10-section">
+        <p class="top10-label">Top Rated Films</p>
 
+        <div class="slider-wrapper" onmouseenter="pauseSlider()" onmouseleave="resumeSlider()">
+            <div id="slider-track"></div>
+            <button class="slider-arrow prev" onclick="slidePrev()">&#8592;</button>
+            <button class="slider-arrow next" onclick="slideNext()">&#8594;</button>
+        </div>
+
+        <div class="slider-dots" id="slider-dots"></div>
+    </section>
+
+    <!-- search resut -->
     <section id="results-section" hidden>
         <div class="results-header">
             <span class="results-title" id="results-title">RESULTS</span>
@@ -92,23 +135,46 @@
         <div class="pagination" id="pagination"></div>
     </section>
 
-
     <div id="state-area"></div>
 
-
+    <!-- content detail-->
     <div id="modal-overlay" role="dialog" aria-modal="true">
         <div id="modal">
-            <button id="btn-close" aria-label="Close" onclick="closeModal()">✕</button>
-            <div class="modal-inner" id="modal-inner">
+            <button id="btn-close" aria-label="Close" onclick="closeModal()">X</button>
+            <div class="modal-inner" id="modal-inner"></div>
+        </div>
+    </div>
 
+
+    <div id="lists-modal" aria-modal="true">
+        <div class="lists-modal-box">
+            <div class="lists-modal-header">
+                <span class="lists-modal-title">My Lists</span>
+                <button class="lists-close-btn" onclick="closeMyLists()">X</button>
             </div>
+            <div class="lists-tabs">
+                <button class="list-tab active" data-tab="watchlist"
+                    onclick="renderMyLists('watchlist')">Watchlist</button>
+                <button class="list-tab" data-tab="watched" onclick="renderMyLists('watched')">Watched</button>
+            </div>
+            <div id="lists-content"></div>
+        </div>
+    </div>
+
+
+    <div id="auth-modal" aria-modal="true">
+        <div class="auth-modal-box">
+            <button class="auth-close-btn" onclick="closeAuthModal()">X</button>
+            <div id="auth-form-container"></div>
         </div>
     </div>
 
     <footer>
-        <p class="footer">🎥 Powered by Yelda Kuru</p>
+        <p class="footer">Powered by Yelda Kuru</p>
     </footer>
 
+
+    <script src="frontend/api.js"></script>
     <script src="frontend/script.js"></script>
 </body>
 

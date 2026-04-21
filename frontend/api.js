@@ -2,6 +2,7 @@
 
 const api = axios.create({
     baseURL: "https://omdb-project-j6ae.onrender.com/api",
+    // baseURL: "http://localhost:5000/api",
     headers: {
         "Content-Type": "application/json"
     }

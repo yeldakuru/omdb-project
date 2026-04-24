@@ -178,21 +178,28 @@ function initAuth() {
     const savedToken = localStorage.getItem("contentapp_token");
     const savedUser = localStorage.getItem("contentapp_user");
 
-    // "undefined" string'i veya bozuk JSON olursa localStorage'ı temizle
-    if (savedToken && savedToken !== "undefined" && savedUser && savedUser !== "undefined") {
+    // bozuk / "undefined" değerleri temizle, JSON.parse'ı çökertmez
+    const tokenOk = savedToken && savedToken !== "undefined" && savedToken !== "null";
+    const userOk = savedUser && savedUser !== "undefined" && savedUser !== "null";
+
+    if (tokenOk && userOk) {
         try {
+            const parsed = JSON.parse(savedUser);
+            // parsed obje değilse veya username yoksa geçersiz say
+            if (!parsed || typeof parsed !== "object" || !parsed.username) {
+                throw new Error("bad user object");
+            }
             authToken = savedToken;
-            currentUser = JSON.parse(savedUser);
+            currentUser = parsed;
             updateHeaderUI();
             loadUserLists();
         } catch (e) {
-            console.warn("Corrupted auth data, clearing localStorage.");
+            // bozuk veriyi temizle, kullanıcıya giriş yap ekranı göster
             localStorage.removeItem("contentapp_token");
             localStorage.removeItem("contentapp_user");
             updateHeaderUI();
         }
     } else {
-        // bozuk değer varsa temizle
         localStorage.removeItem("contentapp_token");
         localStorage.removeItem("contentapp_user");
         updateHeaderUI();

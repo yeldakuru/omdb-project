@@ -4,7 +4,7 @@ import express from "express";
 const router = express.Router();
 
 router.get("/", fetchMovies);
-router.get("/:id", fetchMovieById);
 router.get("/autocomplete", getAutocomplete);
-router.get("/getTop10", getTop10);
+router.get("/top10", getTop10);
+router.get("/:id", fetchMovieById);
 export default router;

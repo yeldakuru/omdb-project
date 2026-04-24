@@ -16,7 +16,7 @@
 
 <body>
 
-
+    <!-- POPCORN INTRO (unchanged) -->
     <div id="intro-screen">
         <canvas id="popcorn-canvas"></canvas>
 
@@ -45,7 +45,6 @@
 
         <div id="intro-title">MOVIE<span>APP</span></div>
     </div>
-
 
     <header>
         <a class="logo" href="#" onclick="resetToHome()">
@@ -76,7 +75,7 @@
         </div>
     </header>
 
-    <!--search-->
+
     <section id="hero">
         <p class="hero-eyebrow">The OMDB's Database</p>
         <h1 class="hero-title">Every Film.<br><em>One Search.</em></h1>
@@ -112,7 +111,7 @@
         </div>
     </section>
 
-    <!-- top 10 -->
+
     <section id="top10-section">
         <p class="top10-label">Top Rated Films</p>
 
@@ -125,7 +124,7 @@
         <div class="slider-dots" id="slider-dots"></div>
     </section>
 
-    <!-- search resut -->
+
     <section id="results-section" hidden>
         <div class="results-header">
             <span class="results-title" id="results-title">RESULTS</span>
@@ -137,7 +136,7 @@
 
     <div id="state-area"></div>
 
-    <!-- content detail-->
+
     <div id="modal-overlay" role="dialog" aria-modal="true">
         <div id="modal">
             <button id="btn-close" aria-label="Close" onclick="closeModal()">X</button>
@@ -160,13 +159,7 @@
             <div id="lists-content"></div>
         </div>
     </div>
-    <!-- AUTH MODAL -->
-    <div id="auth-modal" aria-modal="true">
-        <div class="auth-modal-box">
-            <button class="auth-close-btn" onclick="closeAuthModal()">X</button>
-            <div id="auth-form-container"></div>
-        </div>
-    </div>
+
 
     <div id="auth-modal" aria-modal="true">
         <div class="auth-modal-box">
@@ -179,9 +172,10 @@
         <p class="footer">Powered by Yelda Kuru</p>
     </footer>
 
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="frontend/api.js"></script>
-    <script src="frontend/script.js"></script>
+    <script src="frontend/api.js?v=6"></script>
+    <script src="frontend/script.js?v=6"></script>
 </body>
 
 </html>

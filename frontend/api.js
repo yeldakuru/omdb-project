@@ -9,6 +9,7 @@ const api = axios.create({
 });
 
 // Her istekte güncel token'ı eklemek için Interceptor kullanıyoruz
+// Her istekte localStorage'dan güncel token'ı ekle
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("contentapp_token");
     if (token) {
@@ -45,15 +46,22 @@ async function getAutocompleteSuggestions(query) {
 }
 
 async function getTop10() {
-    return handleResponse(api.get("/content/getTop10"));
+    return handleResponse(api.get("/content/top10"));
 }
 
 async function loginUser(email, password) {
-    return handleResponse(api.post("/auth/login", { email, password }));
+    const data = await handleResponse(
+        api.post("/auth/login", { email, password })
+    );
+    // user bilgisi /auth/me'den 
+    return data;
 }
 
 async function registerUser(username, email, password) {
-    return handleResponse(api.post("/auth/register", { username, email, password }));
+    const data = await handleResponse(
+        api.post("/auth/register", { username, email, password })
+    );
+    return data;
 }
 
 async function getCurrentUser() {

@@ -130,7 +130,7 @@ let userWatched = [];
 })();
 
 // utils
-function esc(str) { // basic HTML escaping to prevent XSS in content titles etc
+function esc(str) { // basit bir HTML escape fonksiyonu, XSS saldırılarına karşı
     if (!str) return "";
     return str
         .replace(/&/g, "&amp;")
@@ -163,6 +163,8 @@ function debounce(fn, wait = 400) { //kullanıcı arama kutusuna her harf yazdı
 
 
 function initAuth() {// sayfa yüklendiğinde localStorage'dan token ve kullanıcı bilgilerini alarak uygulamayı başlat
+
+    // sayfa açılınca localStorage'dan restore et
     const savedToken = localStorage.getItem("contentapp_token");
     const savedUser = localStorage.getItem("contentapp_user");
 
@@ -176,7 +178,7 @@ function initAuth() {// sayfa yüklendiğinde localStorage'dan token ve kullanı
     }
 }
 
-function updateHeaderUI() {// kullanıcı giriş yapmışsa kullanıcı adını göster yapmamışsa giriş butonunu göster
+function updateHeaderUI() {
     const authBtn = document.getElementById("auth-btn");
     const userMenu = document.getElementById("user-menu");
 
@@ -191,7 +193,7 @@ function updateHeaderUI() {// kullanıcı giriş yapmışsa kullanıcı adını 
 }
 
 function logout() {
-    authToken = null; //user çıkış yapınca token ve kullanıcı bilgilerini sıfırlıyoruz
+    authToken = null;
     currentUser = null;
     userWatchlist = [];
     userWatched = [];
@@ -202,6 +204,8 @@ function logout() {
     if (document.getElementById("modal-overlay").classList.contains("open")) closeModal();
 }
 
+
+// AUTH
 
 let authMode = "login";
 
@@ -229,29 +233,29 @@ function renderAuthForm() {
     container.innerHTML = `
         <h2 class="auth-title">${isLogin ? "Sign In" : "Create Account"}</h2>
         <div id="auth-error" class="auth-error" style="display:none"></div>
-
+ 
         ${!isLogin ? `
         <div class="auth-field">
             <label>Username</label>
             <input type="text" id="auth-username" placeholder="Choose a username" autocomplete="off" />
         </div>` : ""}
-
+ 
         <div class="auth-field">
             <label>Email</label>
             <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email" />
         </div>
-
+ 
         <div class="auth-field">
             <label>Password</label>
             <input type="password" id="auth-password"
                 placeholder="${isLogin ? "Your password" : "At least 6 characters"}"
                 autocomplete="${isLogin ? "current-password" : "new-password"}" />
         </div>
-
+ 
         <button class="auth-submit-btn" onclick="submitAuth()">
             ${isLogin ? "Sign In" : "Create Account"}
         </button>
-
+ 
         <p class="auth-switch">
             ${isLogin
             ? `Don't have an account? <button class="auth-link-btn" onclick="switchAuthMode('register')">Sign up</button>`
@@ -260,7 +264,6 @@ function renderAuthForm() {
         </p>
     `;
 
-    // enter key submits
     container.querySelectorAll("input").forEach(input => {
         input.addEventListener("keydown", e => { if (e.key === "Enter") submitAuth(); });
     });
@@ -283,10 +286,10 @@ async function submitAuth() {
     document.getElementById("auth-error").style.display = "none";
 
     try {
-        let data;
+        let tokenData;
 
         if (authMode === "login") {
-            data = await loginUser(email, password);
+            tokenData = await loginUser(email, password);
         } else {
             const username = document.getElementById("auth-username")?.value.trim();
             if (!username) {
@@ -295,12 +298,16 @@ async function submitAuth() {
                 btn.textContent = "Create Account";
                 return;
             }
-            data = await registerUser(username, email, password);
+            tokenData = await registerUser(username, email, password);
         }
 
-        authToken = data.token;
-        currentUser = data.user;
+        // token'ı kaydet
+        authToken = tokenData.token;
         localStorage.setItem("contentapp_token", authToken);
+
+        //  user bilgisini /auth/me'den
+        const user = await getCurrentUser();
+        currentUser = user;
         localStorage.setItem("contentapp_user", JSON.stringify(currentUser));
 
         updateHeaderUI();
@@ -321,6 +328,9 @@ function showAuthError(msg) {
     el.style.display = "block";
 }
 
+
+// USER DROPDOWN
+
 function toggleUserDropdown() {
     document.getElementById("user-dropdown").classList.toggle("open");
 }
@@ -335,11 +345,13 @@ document.addEventListener("click", e => {
 });
 
 
+// USER LISTS 
+
 async function loadUserLists() {
     if (!authToken) return;
 
     try {
-        const [watchlist, watched] = await Promise.all([ //aynı anda çek sırayla değil
+        const [watchlist, watched] = await Promise.all([ // aynı anda çek, sırayla değil
             fetchWatchlist(),
             fetchWatched()
         ]);
@@ -366,8 +378,9 @@ async function toggleWatchlist(content) {
             await removeFromWatchlist(content.imdbID);
             userWatchlist = userWatchlist.filter(m => m.imdbID !== content.imdbID);
         } else {
-            const data = await addToWatchlist(content);
-            userWatchlist = data.watchlist;
+            // backend güncel watchlist array'ini döndürüyor
+            const updated = await addToWatchlist(content);
+            userWatchlist = Array.isArray(updated) ? updated : (updated.watchlist || userWatchlist);
         }
         refreshModalButtons(content.imdbID);
     } catch (err) {
@@ -383,9 +396,9 @@ async function toggleWatched(content) {
             await removeFromWatched(content.imdbID);
             userWatched = userWatched.filter(m => m.imdbID !== content.imdbID);
         } else {
-            const data = await markAsWatched(content);
-            userWatched = data.watched;
-            // markAsWatched also removes it from watchlist on the backend
+            const updated = await markAsWatched(content);
+            userWatched = Array.isArray(updated) ? updated : (updated.watched || userWatched);
+            // markAsWatched backend'de watchlist'ten de siliyor
             userWatchlist = userWatchlist.filter(m => m.imdbID !== content.imdbID);
         }
         refreshModalButtons(content.imdbID);
@@ -409,6 +422,8 @@ function refreshModalButtons(imdbID) {
     wdBtn.textContent = inWD ? "✓ Watched" : "Mark as Watched";
 }
 
+
+// MY LISTS 
 
 let activeListTab = "watchlist";
 
@@ -486,6 +501,8 @@ async function removeListItem(e, imdbID, list) {
 }
 
 
+// top10
+
 let top10contents = [];
 let sliderIndex = 0;
 let sliderInterval = null;
@@ -497,8 +514,6 @@ async function loadTop10() {
     try {
         const contents = await getTop10();
 
-        console.log("Top10 data:", contents); // DEBUG
-
         if (!Array.isArray(contents) || contents.length === 0) {
             section.style.display = "none";
             return;
@@ -507,14 +522,12 @@ async function loadTop10() {
         top10contents = contents;
         renderSlider();
         startSliderAuto();
-
     } catch (err) {
-        console.error("Top10 FULL ERROR:", err);
-        console.error("Backend message:", err.response?.data);
-
+        console.error("Top10 error:", err.message);
         section.style.display = "none";
     }
 }
+
 function renderSlider() {
     const track = document.getElementById("slider-track");
     if (!track) return;
@@ -531,7 +544,7 @@ function renderSlider() {
                     <div class="slide-rank">#${i + 1}</div>
                     <h3 class="slide-title">${esc(content.Title)}</h3>
                     <div class="slide-meta">
-                        <span>${content.Year}</span>
+                        <span>${content.Year || ""}</span>
                         <span>${content.Genre ? content.Genre.split(",")[0] : ""}</span>
                         ${content.imdbRating && content.imdbRating !== "N/A"
                 ? `<span class="slide-rating">⭐ ${content.imdbRating}</span>`
@@ -581,6 +594,8 @@ function pauseSlider() { clearInterval(sliderInterval); }
 function resumeSlider() { startSliderAuto(); }
 
 
+// AUTOCOMPLETE
+
 let autocompleteCache = {};
 let currentSuggestions = [];
 let selectedSuggestionIndex = -1;
@@ -606,12 +621,14 @@ async function fetchSuggestions(query) {
 
     try {
         const data = await getAutocompleteSuggestions(query);
-        if (data.suggestions) {
-            autocompleteCache[query] = data.suggestions;
-            showSuggestions(data.suggestions);
-        }
+
+        // backend direkt array döndürüyor: [{title, year, imdbID, poster}]
+        const suggestions = Array.isArray(data) ? data : (data.suggestions || []);
+
+        autocompleteCache[query] = suggestions;
+        showSuggestions(suggestions);
     } catch {
-        hideSuggestions(); // not critical, fail silently
+        hideSuggestions(); // autocomplete kritik değil, sessiz fail
     }
 }
 
@@ -624,7 +641,7 @@ function showSuggestions(suggestions) {
 
     dropdown.innerHTML = suggestions.map((s, i) => `
         <div class="suggestion-item" data-index="${i}" onclick="selectSuggestion(${i})">
-            ${s.poster
+            ${s.poster && s.poster !== "N/A"
             ? `<img class="suggestion-poster" src="${s.poster}" alt="" loading="lazy">`
             : `<div class="suggestion-poster suggestion-poster-empty"></div>`
         }
@@ -689,6 +706,8 @@ document.addEventListener("click", e => {
     if (wrap && !wrap.contains(e.target)) hideSuggestions();
 });
 
+
+// SEARCH
 
 document.getElementById("f-type").addEventListener("change", () => doSearch(1));
 document.getElementById("f-year").addEventListener("change", () => doSearch(1));
@@ -793,6 +812,9 @@ function posterFallback() {
     return div.firstElementChild;
 }
 
+
+// PAGINATION
+
 function renderPagination(page) {
     const totalPages = Math.ceil(totalResults / 10);
     const pg = document.getElementById("pagination");
@@ -805,6 +827,9 @@ function renderPagination(page) {
         <button class="pg-btn" onclick="doSearch(${page + 1})" ${page >= totalPages ? "disabled" : ""}>NEXT →</button>
     `;
 }
+
+
+// LOADING / ERROR STATES
 
 function showLoading() {
     document.getElementById("results-section").hidden = true;
@@ -824,6 +849,9 @@ function showState(type, icon, title, sub) {
         </div>
     `;
 }
+
+
+// MOVIE DETAIL MODAL
 
 let currentModalcontent = null;
 
@@ -865,7 +893,7 @@ async function openModal(imdbID) {
             <div class="modal-content">
                 <div class="modal-meta-top">
                     <span class="pill accent">${content.Year || ""}</span>
-                    <span class="pill">${content.Runtime !== "N/A" ? content.Runtime : ""}</span>
+                    <span class="pill">${content.Runtime && content.Runtime !== "N/A" ? content.Runtime : ""}</span>
                     <span class="pill">${content.Type || ""}</span>
                 </div>
                 <h2 class="modal-title">${esc(content.Title)}</h2>
@@ -925,6 +953,8 @@ document.addEventListener("keydown", e => {
 });
 
 
+// RESET & RESTORE
+
 function resetToHome() {
     document.getElementById("results-section").hidden = true;
     document.getElementById("state-area").innerHTML = "";
@@ -948,6 +978,9 @@ function resetToHome() {
     doSearch(parseInt(params.get("page"), 10) || 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
 })();
+
+
+// INIT
 
 initAuth();
 loadTop10();

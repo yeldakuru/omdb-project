@@ -1,14 +1,19 @@
 import jwt from "jsonwebtoken";
 
 const auth = (req, res, next) => {
-    const token = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-    if (!token) return res.status(401).json({ error: "No token" });
-    const token = authHeader.startsWith("Bearer ")
+    if (!authHeader) {
+        return res.status(401).json({ error: "No token" });
+    }
+
+
+    const rawToken = authHeader.startsWith("Bearer ")
         ? authHeader.slice(7)
         : authHeader;
+
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
         req.userId = decoded.userId;
         next();
     } catch (err) {

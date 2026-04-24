@@ -1,4 +1,8 @@
+// script.js
+// UI logic only. Tüm HTTP çağrıları api.js'te.
 
+
+// STATE
 
 let currentPage = 1;
 let totalResults = 0;
@@ -7,7 +11,9 @@ let authToken = null;
 let userWatchlist = [];
 let userWatched = [];
 
-// popcorn animation on intro screen
+
+// POPCORN INTRO
+
 (function runIntro() {
     const canvas = document.getElementById("popcorn-canvas");
     if (!canvas) return;
@@ -129,8 +135,10 @@ let userWatched = [];
     }, 3200);
 })();
 
-// utils
-function esc(str) { // basit bir HTML escape fonksiyonu, XSS saldırılarına karşı
+
+// UTILS
+
+function esc(str) { // XSS önlemi
     if (!str) return "";
     return str
         .replace(/&/g, "&amp;")
@@ -139,14 +147,16 @@ function esc(str) { // basit bir HTML escape fonksiyonu, XSS saldırılarına ka
         .replace(/"/g, "&quot;");
 }
 
-function debounce(fn, wait = 400) { //kullanıcı arama kutusuna her harf yazdığında apiye istek atmasını engelliyoruz
-    let timer;//kullanıcı yazmayı bırakana kadar 400ms
+function debounce(fn, wait = 400) {
+    let timer;
     return (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => fn(...args), wait);
     };
 }
 
+
+// YEAR DROPDOWN
 
 (function buildYears() {
     const sel = document.getElementById("f-year");
@@ -162,18 +172,29 @@ function debounce(fn, wait = 400) { //kullanıcı arama kutusuna her harf yazdı
 })();
 
 
-function initAuth() {// sayfa yüklendiğinde localStorage'dan token ve kullanıcı bilgilerini alarak uygulamayı başlat
+// AUTH — STARTUP
 
-    // sayfa açılınca localStorage'dan restore et
+function initAuth() {
     const savedToken = localStorage.getItem("contentapp_token");
     const savedUser = localStorage.getItem("contentapp_user");
 
-    if (savedToken && savedUser) {
-        authToken = savedToken;
-        currentUser = JSON.parse(savedUser);
-        updateHeaderUI();
-        loadUserLists();
+    // "undefined" string'i veya bozuk JSON olursa localStorage'ı temizle
+    if (savedToken && savedToken !== "undefined" && savedUser && savedUser !== "undefined") {
+        try {
+            authToken = savedToken;
+            currentUser = JSON.parse(savedUser);
+            updateHeaderUI();
+            loadUserLists();
+        } catch (e) {
+            console.warn("Corrupted auth data, clearing localStorage.");
+            localStorage.removeItem("contentapp_token");
+            localStorage.removeItem("contentapp_user");
+            updateHeaderUI();
+        }
     } else {
+        // bozuk değer varsa temizle
+        localStorage.removeItem("contentapp_token");
+        localStorage.removeItem("contentapp_user");
         updateHeaderUI();
     }
 }
@@ -205,7 +226,7 @@ function logout() {
 }
 
 
-// AUTH
+// AUTH MODAL
 
 let authMode = "login";
 
@@ -233,29 +254,29 @@ function renderAuthForm() {
     container.innerHTML = `
         <h2 class="auth-title">${isLogin ? "Sign In" : "Create Account"}</h2>
         <div id="auth-error" class="auth-error" style="display:none"></div>
- 
+
         ${!isLogin ? `
         <div class="auth-field">
             <label>Username</label>
             <input type="text" id="auth-username" placeholder="Choose a username" autocomplete="off" />
         </div>` : ""}
- 
+
         <div class="auth-field">
             <label>Email</label>
             <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email" />
         </div>
- 
+
         <div class="auth-field">
             <label>Password</label>
             <input type="password" id="auth-password"
                 placeholder="${isLogin ? "Your password" : "At least 6 characters"}"
                 autocomplete="${isLogin ? "current-password" : "new-password"}" />
         </div>
- 
+
         <button class="auth-submit-btn" onclick="submitAuth()">
             ${isLogin ? "Sign In" : "Create Account"}
         </button>
- 
+
         <p class="auth-switch">
             ${isLogin
             ? `Don't have an account? <button class="auth-link-btn" onclick="switchAuthMode('register')">Sign up</button>`
@@ -305,7 +326,7 @@ async function submitAuth() {
         authToken = tokenData.token;
         localStorage.setItem("contentapp_token", authToken);
 
-        //  user bilgisini /auth/me'den
+        // backend sadece { token } dönüyor, user bilgisini /auth/me'den çekiyoruz
         const user = await getCurrentUser();
         currentUser = user;
         localStorage.setItem("contentapp_user", JSON.stringify(currentUser));
@@ -345,7 +366,7 @@ document.addEventListener("click", e => {
 });
 
 
-// USER LISTS 
+// USER LISTS — DATA
 
 async function loadUserLists() {
     if (!authToken) return;
@@ -423,7 +444,7 @@ function refreshModalButtons(imdbID) {
 }
 
 
-// MY LISTS 
+// MY LISTS MODAL
 
 let activeListTab = "watchlist";
 
@@ -501,7 +522,7 @@ async function removeListItem(e, imdbID, list) {
 }
 
 
-// top10
+// TOP 10 SLIDER
 
 let top10contents = [];
 let sliderIndex = 0;
@@ -751,6 +772,8 @@ async function loadSearchResults(q, type, year, page) {
     }
 }
 
+
+// GRID
 
 function renderGrid(contents, query, page) {
     const section = document.getElementById("results-section");

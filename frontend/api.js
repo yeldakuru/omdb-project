@@ -1,59 +1,63 @@
 
-
 const api = axios.create({
     baseURL: "https://omdb-project-j6ae.onrender.com/api",
-    // baseURL: "http://localhost:5000/api",
-    headers: {
-        "Content-Type": "application/json"
-    }
+
+    headers: { "Content-Type": "application/json" }
 });
 
-// Her istekte güncel token'ı eklemek için Interceptor kullanıyoruz
-// Her istekte localStorage'dan güncel token'ı ekle
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("contentapp_token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
 
-const handleResponse = async (requestPromise) => {
+
+async function handleResponse(promise) {
     try {
-        const response = await requestPromise;
-        return response.data;
-    } catch (error) {
-        // Backend'den gelen hata mesajını yakala
-        const message = error.response?.data?.error || error.message || "Server Error";
-        throw new Error(message);
+        const res = await promise;
+        return res.data;
+    } catch (err) {
+        const msg = err.response?.data?.error
+            || err.response?.data?.message
+            || err.message
+            || "Server error";
+        throw new Error(msg);
     }
-};
+}
+
 
 async function searchcontents({ title, type = "", year = "", page = 1 }) {
-    return handleResponse(api.get("/content/", {
-        params: { title, type, year, page }
-    }));
+    return handleResponse(
+        api.get("/content/", { params: { title, type, year, page } })
+    );
 }
 
 async function getcontentById(imdbID) {
-    return handleResponse(api.get(`/content/${imdbID}`));
+    return handleResponse(
+        api.get(`/content/${imdbID}`)
+    );
 }
 
 async function getAutocompleteSuggestions(query) {
-    return handleResponse(api.get("/content/autocomplete", {
-        params: { q: query }
-    }));
+    return handleResponse(
+        api.get("/content/autocomplete", { params: { q: query } })
+    );
 }
 
 async function getTop10() {
-    return handleResponse(api.get("/content/top10"));
+    return handleResponse(
+        api.get("/content/top10")
+    );
 }
+
+// AUTH
 
 async function loginUser(email, password) {
     const data = await handleResponse(
         api.post("/auth/login", { email, password })
     );
-    // user bilgisi /auth/me'den 
+    // user bilgisini /auth/me'den 
     return data;
 }
 
@@ -67,6 +71,7 @@ async function registerUser(username, email, password) {
 async function getCurrentUser() {
     return handleResponse(api.get("/auth/me"));
 }
+
 
 async function fetchWatchlist() {
     return handleResponse(api.get("/user/watchlist"));
@@ -86,6 +91,7 @@ async function removeFromWatchlist(imdbID) {
     return handleResponse(api.delete(`/user/watchlist/${imdbID}`));
 }
 
+
 async function fetchWatched() {
     return handleResponse(api.get("/user/watched"));
 }
@@ -103,4 +109,3 @@ async function markAsWatched(content) {
 async function removeFromWatched(imdbID) {
     return handleResponse(api.delete(`/user/watched/${imdbID}`));
 }
-

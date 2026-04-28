@@ -1,11 +1,6 @@
 import axios from "axios";
 import { getCache, setCache } from "../utils/cache.js";
 
-
-
-import axios from "axios";
-import { getCache, setCache } from "../utils/cache.js";
-
 export const fetchMovies = async (req, res) => {
     const { title, type, year, page, genre } = req.query;
 

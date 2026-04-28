@@ -1,5 +1,3 @@
-// script.js
-// UI logic only. Tüm HTTP çağrıları api.js'te.
 
 
 // STATE
@@ -138,7 +136,7 @@ let userWatched = [];
 
 // UTILS
 
-function esc(str) { // XSS önlemi
+function esc(str) {
     if (!str) return "";
     return str
         .replace(/&/g, "&amp;")
@@ -178,14 +176,12 @@ function initAuth() {
     const savedToken = localStorage.getItem("contentapp_token");
     const savedUser = localStorage.getItem("contentapp_user");
 
-    // bozuk / "undefined" değerleri temizle, JSON.parse'ı çökertmez
     const tokenOk = savedToken && savedToken !== "undefined" && savedToken !== "null";
     const userOk = savedUser && savedUser !== "undefined" && savedUser !== "null";
 
     if (tokenOk && userOk) {
         try {
             const parsed = JSON.parse(savedUser);
-            // parsed obje değilse veya username yoksa geçersiz say
             if (!parsed || typeof parsed !== "object" || !parsed.username) {
                 throw new Error("bad user object");
             }
@@ -194,7 +190,6 @@ function initAuth() {
             updateHeaderUI();
             loadUserLists();
         } catch (e) {
-            // bozuk veriyi temizle, kullanıcıya giriş yap ekranı göster
             localStorage.removeItem("contentapp_token");
             localStorage.removeItem("contentapp_user");
             updateHeaderUI();
@@ -329,11 +324,9 @@ async function submitAuth() {
             tokenData = await registerUser(username, email, password);
         }
 
-        // token'ı kaydet
         authToken = tokenData.token;
         localStorage.setItem("contentapp_token", authToken);
 
-        // backend sadece { token } dönüyor, user bilgisini /auth/me'den çekiyoruz
         const user = await getCurrentUser();
         currentUser = user;
         localStorage.setItem("contentapp_user", JSON.stringify(currentUser));
@@ -379,7 +372,7 @@ async function loadUserLists() {
     if (!authToken) return;
 
     try {
-        const [watchlist, watched] = await Promise.all([ // aynı anda çek, sırayla değil
+        const [watchlist, watched] = await Promise.all([
             fetchWatchlist(),
             fetchWatched()
         ]);
@@ -398,38 +391,44 @@ function isWatched(imdbID) {
     return userWatched.some(m => m.imdbID === imdbID);
 }
 
-async function toggleWatchlist(content) {
+async function toggleWatchlist(imdbID) {
     if (!currentUser) { openAuthModal("login"); return; }
 
+    // currentModalcontent'i buradan okumak yerine imdbID üzerinden çalışıyoruz
+    const content = currentModalContent;
+    if (!content) return;
+
     try {
-        if (isInWatchlist(content.imdbID)) {
-            await removeFromWatchlist(content.imdbID);
-            userWatchlist = userWatchlist.filter(m => m.imdbID !== content.imdbID);
+        if (isInWatchlist(imdbID)) {
+            await removeFromWatchlist(imdbID);
+            userWatchlist = userWatchlist.filter(m => m.imdbID !== imdbID);
         } else {
-            // backend güncel watchlist array'ini döndürüyor
             const updated = await addToWatchlist(content);
             userWatchlist = Array.isArray(updated) ? updated : (updated.watchlist || userWatchlist);
         }
-        refreshModalButtons(content.imdbID);
+        refreshModalButtons(imdbID);
     } catch (err) {
         console.error("Watchlist error:", err.message);
     }
 }
 
-async function toggleWatched(content) {
+async function toggleWatched(imdbID) {
     if (!currentUser) { openAuthModal("login"); return; }
 
+    const content = currentModalContent;
+    if (!content) return;
+
     try {
-        if (isWatched(content.imdbID)) {
-            await removeFromWatched(content.imdbID);
-            userWatched = userWatched.filter(m => m.imdbID !== content.imdbID);
+        if (isWatched(imdbID)) {
+            await removeFromWatched(imdbID);
+            userWatched = userWatched.filter(m => m.imdbID !== imdbID);
         } else {
             const updated = await markAsWatched(content);
             userWatched = Array.isArray(updated) ? updated : (updated.watched || userWatched);
-            // markAsWatched backend'de watchlist'ten de siliyor
-            userWatchlist = userWatchlist.filter(m => m.imdbID !== content.imdbID);
+            // backend also removes from watchlist when marking watched
+            userWatchlist = userWatchlist.filter(m => m.imdbID !== imdbID);
         }
-        refreshModalButtons(content.imdbID);
+        refreshModalButtons(imdbID);
     } catch (err) {
         console.error("Watched error:", err.message);
     }
@@ -529,118 +528,60 @@ async function removeListItem(e, imdbID, list) {
 }
 
 
-// TOP 10 SLIDER
+// TOP 10 GRID
 
 let top10contents = [];
-// let sliderIndex = 0;
-// let sliderInterval = null;
 
-// async function loadTop10() {
-//     const section = document.getElementById("top10-section");
-//     if (!section) return;
-
-//     try {
-//         const contents = await getTop10();
-
-//         if (!Array.isArray(contents) || contents.length === 0) {
-//             section.style.display = "none";
-//             return;
-//         }
-
-//         top10contents = contents;
-//         renderSlider();
-//         startSliderAuto();
-//     } catch (err) {
-//         console.error("Top10 error:", err.message);
-//         section.style.display = "none";
-//     }
-// }
-
-// function renderSlider() {
-//     const track = document.getElementById("slider-track");
-//     if (!track) return;
-
-//     track.innerHTML = top10contents.map((content, i) => {
-//         const hasPoster = content.Poster && content.Poster !== "N/A";
-//         return `
-//             <div class="slide" data-index="${i}">
-//                 <div class="slide-bg"
-//                     ${hasPoster ? `style="background-image: url('${content.Poster}')"` : ""}>
-//                 </div>
-//                 <div class="slide-overlay"></div>
-//                 <div class="slide-content">
-//                     <div class="slide-rank">#${i + 1}</div>
-//                     <h3 class="slide-title">${esc(content.Title)}</h3>
-//                     <div class="slide-meta">
-//                         <span>${content.Year || ""}</span>
-//                         <span>${content.Genre ? content.Genre.split(",")[0] : ""}</span>
-//                         ${content.imdbRating && content.imdbRating !== "N/A"
-//                 ? `<span class="slide-rating">⭐ ${content.imdbRating}</span>`
-//                 : ""
-//             }
-//                     </div>
-//                     <p class="slide-plot">
-//                         ${content.Plot && content.Plot !== "N/A"
-//                 ? esc(content.Plot.slice(0, 140)) + "..."
-//                 : ""
-//             }
-//                     </p>
-//                     <button class="slide-btn" onclick="openModal('${content.imdbID}')">View Details</button>
-//                 </div>
-//             </div>
-//         `;
-//     }).join("");
-
-//     renderSliderDots();
-//     goToSlide(0);
-// }
 async function loadTop10() {
     try {
         const contents = await getTop10();
-
         if (!Array.isArray(contents)) return;
-
-        renderTop10Grid(contents);
+        top10contents = contents;
+        renderTop10Grid(contents, "top10-grid");
+        loadTopSeries();
     } catch (err) {
         console.error(err);
     }
 }
 
-function renderTop10Grid(contents) {
-    const grid = document.getElementById("top10-grid");
+async function loadTopSeries() {
+    try {
+        // Eğer backend'de ayrı bir endpoint yoksa top10'dan series filtrele
+        const seriesItems = top10contents.filter(c =>
+            (c.Type || c.type || "").toLowerCase() === "series"
+        );
 
-    grid.innerHTML = contents.slice(0, 10).map((c, i) => `
-        <div class="top-card" onclick="openModal('${c.imdbID}')">
-            <div class="rank">#${i + 1}</div>
-            <img src="${c.Poster}" />
-        </div>
-    `).join("");
+        if (seriesItems.length > 0) {
+            renderTop10Grid(seriesItems, "top-series-grid");
+            document.getElementById("top-series-label").style.display = "block";
+        }
+        // Not: Eğer backend'de /content/top10?type=series endpoint'i varsa,
+        // buraya getTop10Series() çağrısı ekleyebilirsin.
+    } catch (err) {
+        console.error("Top series error:", err);
+    }
 }
-// function renderSliderDots() {
-//     const dotsEl = document.getElementById("slider-dots");
-//     if (!dotsEl) return;
 
-//     dotsEl.innerHTML = top10contents
-//         .map((_, i) => `<button class="slider-dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})"></button>`)
-//         .join("");
-// }
+function renderTop10Grid(contents, gridId) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
 
-// function goToSlide(index) {
-//     sliderIndex = index;
-//     const track = document.getElementById("slider-track");
-//     if (track) track.style.transform = `translateX(-${index * 100}%)`;
-
-//     document.querySelectorAll(".slider-dot").forEach((dot, i) => {
-//         dot.classList.toggle("active", i === index);
-//     });
-// }
-
-// function slideNext() { goToSlide((sliderIndex + 1) % top10contents.length); }
-// function slidePrev() { goToSlide((sliderIndex - 1 + top10contents.length) % top10contents.length); }
-
-// function startSliderAuto() { sliderInterval = setInterval(slideNext, 5000); }
-// function pauseSlider() { clearInterval(sliderInterval); }
-// function resumeSlider() { startSliderAuto(); }
+    grid.innerHTML = contents.slice(0, 10).map((c, i) => {
+        const poster = c.Poster || c.poster;
+        const hasPoster = poster && poster !== "N/A";
+        const id = c.imdbID || c.imdbId;
+        return `
+            <div class="top-card" onclick="openModal('${id}')">
+                <div class="rank">#${i + 1}</div>
+                ${hasPoster
+                ? `<img src="${esc(poster)}" alt="${esc(c.Title || c.title || '')}" loading="lazy"
+                        onerror="this.style.display='none'; this.parentElement.classList.add('no-poster')">`
+                : `<div class="top-card-fallback">${posterFallbackHTML()}</div>`
+            }
+            </div>
+        `;
+    }).join("");
+}
 
 
 // AUTOCOMPLETE
@@ -650,14 +591,9 @@ let currentSuggestions = [];
 let selectedSuggestionIndex = -1;
 
 const debouncedAutocomplete = debounce(fetchSuggestions, 350);
-const debouncedSearch = debounce(() => {
-    const q = document.getElementById("q").value.trim();
-    if (q.length >= 3) doSearch(1);
-}, 600);
 
 function onSearchInput() {
     const q = document.getElementById("q").value.trim();
-    // debouncedSearch();
     if (q.length < 2) { hideSuggestions(); return; }
     debouncedAutocomplete(q);
 }
@@ -670,14 +606,11 @@ async function fetchSuggestions(query) {
 
     try {
         const data = await getAutocompleteSuggestions(query);
-
-        // backend direkt array döndürüyor: [{title, year, imdbID, poster}]
         const suggestions = Array.isArray(data) ? data : (data.suggestions || []);
-
         autocompleteCache[query] = suggestions;
         showSuggestions(suggestions);
     } catch {
-        hideSuggestions(); // autocomplete kritik değil, sessiz fail
+        hideSuggestions();
     }
 }
 
@@ -716,7 +649,8 @@ function selectSuggestion(index) {
     if (!s) return;
     document.getElementById("q").value = s.title;
     hideSuggestions();
-    //doSearch(1);
+    // BUG FIX: önce search yap (arka planda sonuçlar görünsün), sonra modal aç
+    doSearch(1);
     openModal(s.imdbID);
 }
 
@@ -726,39 +660,31 @@ function updateSuggestionHighlight() {
     });
 }
 
-// document.getElementById("q").addEventListener("keydown", e => {
-//     const dropdown = document.getElementById("autocomplete-dropdown");
-//     const isVisible = dropdown && dropdown.style.display === "block";
-
-//     if (e.key === "ArrowDown" && isVisible) {
-//         e.preventDefault();
-//         selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentSuggestions.length - 1);
-//         updateSuggestionHighlight();
-//     } else if (e.key === "ArrowUp" && isVisible) {
-//         e.preventDefault();
-//         selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
-//         updateSuggestionHighlight();
-//     } else if (e.key === "Enter") {
-//         if (isVisible && selectedSuggestionIndex >= 0) {
-//             e.preventDefault();
-//             selectSuggestion(selectedSuggestionIndex);
-//         } else {
-//             hideSuggestions();
-//             doSearch(1);
-//         }
-//     } else if (e.key === "Escape") {
-//         hideSuggestions();
-//     }
-// });
 document.getElementById("q").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        if (selectedSuggestionIndex >= 0) {
+    const dropdown = document.getElementById("autocomplete-dropdown");
+    const isVisible = dropdown && dropdown.style.display === "block";
+
+    if (e.key === "ArrowDown" && isVisible) {
+        e.preventDefault();
+        selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentSuggestions.length - 1);
+        updateSuggestionHighlight();
+    } else if (e.key === "ArrowUp" && isVisible) {
+        e.preventDefault();
+        selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+        updateSuggestionHighlight();
+    } else if (e.key === "Enter") {
+        if (isVisible && selectedSuggestionIndex >= 0) {
+            e.preventDefault();
             selectSuggestion(selectedSuggestionIndex);
         } else {
+            hideSuggestions();
             doSearch(1);
         }
+    } else if (e.key === "Escape") {
+        hideSuggestions();
     }
 });
+
 document.addEventListener("click", e => {
     const wrap = document.querySelector(".search-wrap");
     if (wrap && !wrap.contains(e.target)) hideSuggestions();
@@ -769,6 +695,7 @@ document.addEventListener("click", e => {
 
 document.getElementById("f-type").addEventListener("change", () => doSearch(1));
 document.getElementById("f-year").addEventListener("change", () => doSearch(1));
+document.getElementById("f-genre").addEventListener("change", () => doSearch(1));
 
 function doSearch(page = 1) {
     const q = document.getElementById("q").value.trim();
@@ -785,13 +712,7 @@ async function loadSearchResults(q, type, year, page, genre) {
     showLoading();
 
     try {
-        const data = await searchcontents({
-            title: q,
-            type,
-            year,
-            page,
-            genre
-        });
+        const data = await searchcontents({ title: q, type, year, page, genre });
 
         if (data.Response === "True") {
             totalResults = data.totalResults;
@@ -836,10 +757,10 @@ function renderGrid(contents, query, page) {
                 : posterFallbackHTML()
             }
             <div class="card-body">
-               <div class="card-year">
-        ${m.Year || "—"} • ${m.Genre ? m.Genre.split(",")[0] : ""}
-    </div>
-    <div class="card-title">${esc(m.Title)}</div>
+                <div class="card-year">
+                    ${m.Year || "—"} • ${m.Genre ? m.Genre.split(",")[0] : ""}
+                </div>
+                <div class="card-title">${esc(m.Title)}</div>
             </div>
         `;
         grid.appendChild(card);
@@ -909,7 +830,7 @@ function showState(type, icon, title, sub) {
 
 // MOVIE DETAIL MODAL
 
-let currentModalcontent = null;
+let currentModalContent = null;
 
 async function openModal(imdbID) {
     const overlay = document.getElementById("modal-overlay");
@@ -926,7 +847,7 @@ async function openModal(imdbID) {
 
     try {
         const content = await getcontentById(imdbID);
-        currentModalcontent = content;
+        currentModalContent = content;
 
         const hasPoster = content.Poster && content.Poster !== "N/A";
         const inWL = isInWatchlist(imdbID);
@@ -963,17 +884,20 @@ async function openModal(imdbID) {
                 </div>
                 <div class="ratings-row">${ratingsHTML}</div>
                 <div class="modal-actions">
-                    <button id="modal-watchlist-btn" class="action-btn ${inWL ? "active" : ""}"
-                        onclick="toggleWatchlist(currentModalcontent)">
+                    <button id="modal-watchlist-btn" class="action-btn ${inWL ? "active" : ""}">
                         ${inWL ? "✓ In Watchlist" : "+ Watchlist"}
                     </button>
-                    <button id="modal-watched-btn" class="action-btn ${inWD ? "active" : ""}"
-                        onclick="toggleWatched(currentModalcontent)">
+                    <button id="modal-watched-btn" class="action-btn ${inWD ? "active" : ""}">
                         ${inWD ? "✓ Watched" : "Mark as Watched"}
                     </button>
                 </div>
             </div>
         `;
+
+        // BUG FIX: bind buttons via JS event listeners so they can access currentModalContent
+        document.getElementById("modal-watchlist-btn").addEventListener("click", () => toggleWatchlist(imdbID));
+        document.getElementById("modal-watched-btn").addEventListener("click", () => toggleWatched(imdbID));
+
     } catch (err) {
         inner.innerHTML = `<p style="padding:40px;color:var(--muted)">Error loading details.</p>`;
         console.error("Modal error:", err.message);
@@ -993,7 +917,7 @@ function detailItem(label, val) {
 function closeModal() {
     document.getElementById("modal-overlay").classList.remove("open");
     document.body.style.overflow = "";
-    currentModalcontent = null;
+    currentModalContent = null;
 }
 
 document.getElementById("modal-overlay").addEventListener("click", e => {

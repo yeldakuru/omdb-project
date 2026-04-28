@@ -16,7 +16,7 @@
 
 <body>
 
-    <!-- POPCORN INTRO (unchanged) -->
+    <!-- POPCORN INTRO -->
     <div id="intro-screen">
         <canvas id="popcorn-canvas"></canvas>
 
@@ -94,6 +94,7 @@
             <div class="filters">
                 <div class="filter-group">
                     <label>Type</label>
+                    <!-- BUG FIX: was id="f-type" on both Type and Genre selects -->
                     <select id="f-type">
                         <option value="">All</option>
                         <option value="movie">Movie</option>
@@ -109,14 +110,14 @@
                 </div>
                 <div class="filter-group">
                     <label>Genre</label>
-                    <select id="f-type">
+                    <!-- BUG FIX: changed id from "f-type" to "f-genre" -->
+                    <select id="f-genre">
                         <option value="">All</option>
                         <option value="Action">Action</option>
                         <option value="Drama">Drama</option>
                         <option value="Comedy">Comedy</option>
                         <option value="Horror">Horror</option>
                         <option value="Romance">Romance</option>
-                        <option value="Game">Game</option>
                         <option value="Sci-Fi">Sci-Fi</option>
                         <option value="Fantasy">Fantasy</option>
                         <option value="Animation">Animation</option>
@@ -132,7 +133,8 @@
         <p class="top10-label">Top Rated Films</p>
         <div id="top10-grid" class="top10-grid"></div>
 
-
+        <p class="top10-label" id="top-series-label" style="margin-top:40px;display:none;">Top Rated Series</p>
+        <div id="top-series-grid" class="top10-grid"></div>
     </section>
 
 
@@ -185,8 +187,8 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="frontend/api.js?v=6"></script>
-    <script src="frontend/script.js?v=6"></script>
+    <script src="frontend/api.js?v=7"></script>
+    <script src="frontend/script.js?v=7"></script>
 </body>
 
 </html>

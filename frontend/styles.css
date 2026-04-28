@@ -390,6 +390,7 @@ header {
     opacity: 0;
     animation: fadeUp .6s .45s forwards;
     position: relative;
+    z-index: 10;
 }
 
 .search-row {
@@ -1710,6 +1711,11 @@ header {
     .lists-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
+
+    .top10-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 20px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1738,21 +1744,35 @@ header {
         display: none;
     }
 
+    .top10-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 20px;
+    }
+
     /* just show icon on tiny screens */
 }
 
 
 /* AUTOCOMPLETE FIX */
 #autocomplete-dropdown {
-    z-index: 9999;
-    max-height: 300px;
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
     overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    z-index: 300;
 }
 
 /* TOP10 GRID */
 .top10-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 20px;
     padding: 0 48px;
 }
@@ -1785,4 +1805,27 @@ header {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* Top card fallback (posteri olmayan filmler için) */
+.top-card-fallback {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--surface2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+}
+
+.top-card.no-poster {
+    background: var(--surface2);
+    border-radius: 4px;
+    aspect-ratio: 2/3;
+}
+
+/* Top series label spacing */
+#top-series-label {
+    margin-top: 40px;
 }

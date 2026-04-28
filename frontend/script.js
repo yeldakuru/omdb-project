@@ -710,10 +710,12 @@ async function loadSearchResults(q, type, year, page, genre) {
             totalResults = data.totalResults;
             renderGrid(data.Search, q, page);
         } else {
-            showState("error", "🎥", "No results", "");
+            showState("error", "🎬", "No Results Found",
+                `We couldn't find anything matching "<strong>${esc(q)}</strong>". Try a different title or remove filters.`);
         }
     } catch {
-        showState("error", "⚠️", "Error", "");
+        showState("error", "⚠️", "Something Went Wrong",
+            "We couldn't reach the server. Please check your connection and try again.");
     }
 }
 
@@ -799,16 +801,23 @@ function renderPagination(page) {
 
 
 // LOADING / ERROR STATES
-
 function showLoading() {
+    const top10 = document.getElementById("top10-section");
+    if (top10) top10.style.display = "none";
+    document.getElementById("hero").classList.add("compact");
     document.getElementById("results-section").hidden = true;
     document.getElementById("state-area").innerHTML = `
-        <div class="loader"><span></span><span></span><span></span></div>
-        <p class="state-sub">Searching the archives…</p>
+        <div class="state-loading">
+            <div class="loader"><span></span><span></span><span></span></div>
+            <p class="state-sub">Searching the archives…</p>
+        </div>
     `;
 }
 
 function showState(type, icon, title, sub) {
+    const top10 = document.getElementById("top10-section");
+    if (top10) top10.style.display = "none";
+    document.getElementById("hero").classList.add("compact");
     document.getElementById("results-section").hidden = true;
     document.getElementById("state-area").innerHTML = `
         <div class="state-${type}">
@@ -818,7 +827,6 @@ function showState(type, icon, title, sub) {
         </div>
     `;
 }
-
 
 // MOVIE DETAIL MODAL
 

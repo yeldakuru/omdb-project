@@ -50,7 +50,9 @@ async function getTop10() {
         api.get("/content/top10")
     );
 }
-
+async function getTop10Series() {
+    return handleResponse(api.get("/content/top10series"));
+}
 // AUTH
 
 async function loginUser(email, password) {

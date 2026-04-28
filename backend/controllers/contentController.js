@@ -210,3 +210,46 @@ export const getTop10 = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+export const getTop10Series = async (req, res) => {
+    const API_KEY = process.env.API_KEY;
+    const cacheKey = "top10series";
+
+    const cached = getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    try {
+        const searchRes = await axios.get(process.env.API_BASE, {
+            params: {
+                apikey: API_KEY,
+                s: "series",
+                type: "series",
+                page: 1
+            }
+        });
+
+        if (!searchRes.data.Search) {
+            return res.status(404).json({ error: "No data found" });
+        }
+
+        const detailRequests = searchRes.data.Search.map(item =>
+            axios.get(process.env.API_BASE, {
+                params: { apikey: API_KEY, i: item.imdbID }
+            }).then(r => r.data).catch(() => null)
+        );
+
+        const details = await Promise.all(detailRequests);
+
+        const sorted = details
+            .filter(m => m && m.imdbRating && m.imdbRating !== "N/A")
+            .sort((a, b) => parseFloat(b.imdbRating) - parseFloat(a.imdbRating))
+            .slice(0, 10);
+
+        setCache(cacheKey, sorted, 3600000);
+        res.json(sorted);
+
+    } catch (err) {
+        console.error("Top10Series error:", err.message);
+        res.status(500).json({ error: "Server error" });
+    }
+};

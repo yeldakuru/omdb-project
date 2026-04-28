@@ -546,22 +546,14 @@ async function loadTop10() {
 
 async function loadTopSeries() {
     try {
-        // Eğer backend'de ayrı bir endpoint yoksa top10'dan series filtrele
-        const seriesItems = top10contents.filter(c =>
-            (c.Type || c.type || "").toLowerCase() === "series"
-        );
-
-        if (seriesItems.length > 0) {
-            renderTop10Grid(seriesItems, "top-series-grid");
-            document.getElementById("top-series-label").style.display = "block";
-        }
-        // Not: Eğer backend'de /content/top10?type=series endpoint'i varsa,
-        // buraya getTop10Series() çağrısı ekleyebilirsin.
+        const contents = await getTop10Series();
+        if (!Array.isArray(contents) || contents.length === 0) return;
+        renderTop10Grid(contents, "top-series-grid");
+        document.getElementById("top-series-label").style.display = "block";
     } catch (err) {
         console.error("Top series error:", err);
     }
 }
-
 function renderTop10Grid(contents, gridId) {
     const grid = document.getElementById(gridId);
     if (!grid) return;

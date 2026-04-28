@@ -532,94 +532,115 @@ async function removeListItem(e, imdbID, list) {
 // TOP 10 SLIDER
 
 let top10contents = [];
-let sliderIndex = 0;
-let sliderInterval = null;
+// let sliderIndex = 0;
+// let sliderInterval = null;
 
+// async function loadTop10() {
+//     const section = document.getElementById("top10-section");
+//     if (!section) return;
+
+//     try {
+//         const contents = await getTop10();
+
+//         if (!Array.isArray(contents) || contents.length === 0) {
+//             section.style.display = "none";
+//             return;
+//         }
+
+//         top10contents = contents;
+//         renderSlider();
+//         startSliderAuto();
+//     } catch (err) {
+//         console.error("Top10 error:", err.message);
+//         section.style.display = "none";
+//     }
+// }
+
+// function renderSlider() {
+//     const track = document.getElementById("slider-track");
+//     if (!track) return;
+
+//     track.innerHTML = top10contents.map((content, i) => {
+//         const hasPoster = content.Poster && content.Poster !== "N/A";
+//         return `
+//             <div class="slide" data-index="${i}">
+//                 <div class="slide-bg"
+//                     ${hasPoster ? `style="background-image: url('${content.Poster}')"` : ""}>
+//                 </div>
+//                 <div class="slide-overlay"></div>
+//                 <div class="slide-content">
+//                     <div class="slide-rank">#${i + 1}</div>
+//                     <h3 class="slide-title">${esc(content.Title)}</h3>
+//                     <div class="slide-meta">
+//                         <span>${content.Year || ""}</span>
+//                         <span>${content.Genre ? content.Genre.split(",")[0] : ""}</span>
+//                         ${content.imdbRating && content.imdbRating !== "N/A"
+//                 ? `<span class="slide-rating">⭐ ${content.imdbRating}</span>`
+//                 : ""
+//             }
+//                     </div>
+//                     <p class="slide-plot">
+//                         ${content.Plot && content.Plot !== "N/A"
+//                 ? esc(content.Plot.slice(0, 140)) + "..."
+//                 : ""
+//             }
+//                     </p>
+//                     <button class="slide-btn" onclick="openModal('${content.imdbID}')">View Details</button>
+//                 </div>
+//             </div>
+//         `;
+//     }).join("");
+
+//     renderSliderDots();
+//     goToSlide(0);
+// }
 async function loadTop10() {
-    const section = document.getElementById("top10-section");
-    if (!section) return;
-
     try {
         const contents = await getTop10();
 
-        if (!Array.isArray(contents) || contents.length === 0) {
-            section.style.display = "none";
-            return;
-        }
+        if (!Array.isArray(contents)) return;
 
-        top10contents = contents;
-        renderSlider();
-        startSliderAuto();
+        renderTop10Grid(contents);
     } catch (err) {
-        console.error("Top10 error:", err.message);
-        section.style.display = "none";
+        console.error(err);
     }
 }
 
-function renderSlider() {
-    const track = document.getElementById("slider-track");
-    if (!track) return;
+function renderTop10Grid(contents) {
+    const grid = document.getElementById("top10-grid");
 
-    track.innerHTML = top10contents.map((content, i) => {
-        const hasPoster = content.Poster && content.Poster !== "N/A";
-        return `
-            <div class="slide" data-index="${i}">
-                <div class="slide-bg"
-                    ${hasPoster ? `style="background-image: url('${content.Poster}')"` : ""}>
-                </div>
-                <div class="slide-overlay"></div>
-                <div class="slide-content">
-                    <div class="slide-rank">#${i + 1}</div>
-                    <h3 class="slide-title">${esc(content.Title)}</h3>
-                    <div class="slide-meta">
-                        <span>${content.Year || ""}</span>
-                        <span>${content.Genre ? content.Genre.split(",")[0] : ""}</span>
-                        ${content.imdbRating && content.imdbRating !== "N/A"
-                ? `<span class="slide-rating">⭐ ${content.imdbRating}</span>`
-                : ""
-            }
-                    </div>
-                    <p class="slide-plot">
-                        ${content.Plot && content.Plot !== "N/A"
-                ? esc(content.Plot.slice(0, 140)) + "..."
-                : ""
-            }
-                    </p>
-                    <button class="slide-btn" onclick="openModal('${content.imdbID}')">View Details</button>
-                </div>
-            </div>
-        `;
-    }).join("");
-
-    renderSliderDots();
-    goToSlide(0);
+    grid.innerHTML = contents.slice(0, 10).map((c, i) => `
+        <div class="top-card" onclick="openModal('${c.imdbID}')">
+            <div class="rank">#${i + 1}</div>
+            <img src="${c.Poster}" />
+        </div>
+    `).join("");
 }
+// function renderSliderDots() {
+//     const dotsEl = document.getElementById("slider-dots");
+//     if (!dotsEl) return;
 
-function renderSliderDots() {
-    const dotsEl = document.getElementById("slider-dots");
-    if (!dotsEl) return;
+//     dotsEl.innerHTML = top10contents
+//         .map((_, i) => `<button class="slider-dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})"></button>`)
+//         .join("");
+// }
 
-    dotsEl.innerHTML = top10contents
-        .map((_, i) => `<button class="slider-dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})"></button>`)
-        .join("");
-}
+// function goToSlide(index) {
+//     sliderIndex = index;
+//     const track = document.getElementById("slider-track");
+//     if (track) track.style.transform = `translateX(-${index * 100}%)`;
 
-function goToSlide(index) {
-    sliderIndex = index;
-    const track = document.getElementById("slider-track");
-    if (track) track.style.transform = `translateX(-${index * 100}%)`;
+//     document.querySelectorAll(".slider-dot").forEach((dot, i) => {
+//         dot.classList.toggle("active", i === index);
+//     });
+// }
 
-    document.querySelectorAll(".slider-dot").forEach((dot, i) => {
-        dot.classList.toggle("active", i === index);
-    });
-}
+// function slideNext() { goToSlide((sliderIndex + 1) % top10contents.length); }
+// function slidePrev() { goToSlide((sliderIndex - 1 + top10contents.length) % top10contents.length); }
 
-function slideNext() { goToSlide((sliderIndex + 1) % top10contents.length); }
-function slidePrev() { goToSlide((sliderIndex - 1 + top10contents.length) % top10contents.length); }
-
-function startSliderAuto() { sliderInterval = setInterval(slideNext, 5000); }
-function pauseSlider() { clearInterval(sliderInterval); }
-function resumeSlider() { startSliderAuto(); }
+// function startSliderAuto() { sliderInterval = setInterval(slideNext, 5000); }
+// function pauseSlider() { clearInterval(sliderInterval); }
+// function resumeSlider() { startSliderAuto(); }
 
 
 // AUTOCOMPLETE
@@ -636,7 +657,7 @@ const debouncedSearch = debounce(() => {
 
 function onSearchInput() {
     const q = document.getElementById("q").value.trim();
-    debouncedSearch();
+    // debouncedSearch();
     if (q.length < 2) { hideSuggestions(); return; }
     debouncedAutocomplete(q);
 }
@@ -695,7 +716,8 @@ function selectSuggestion(index) {
     if (!s) return;
     document.getElementById("q").value = s.title;
     hideSuggestions();
-    doSearch(1);
+    //doSearch(1);
+    openModal(s.imdbID);
 }
 
 function updateSuggestionHighlight() {
@@ -704,31 +726,39 @@ function updateSuggestionHighlight() {
     });
 }
 
-document.getElementById("q").addEventListener("keydown", e => {
-    const dropdown = document.getElementById("autocomplete-dropdown");
-    const isVisible = dropdown && dropdown.style.display === "block";
+// document.getElementById("q").addEventListener("keydown", e => {
+//     const dropdown = document.getElementById("autocomplete-dropdown");
+//     const isVisible = dropdown && dropdown.style.display === "block";
 
-    if (e.key === "ArrowDown" && isVisible) {
-        e.preventDefault();
-        selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentSuggestions.length - 1);
-        updateSuggestionHighlight();
-    } else if (e.key === "ArrowUp" && isVisible) {
-        e.preventDefault();
-        selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
-        updateSuggestionHighlight();
-    } else if (e.key === "Enter") {
-        if (isVisible && selectedSuggestionIndex >= 0) {
-            e.preventDefault();
+//     if (e.key === "ArrowDown" && isVisible) {
+//         e.preventDefault();
+//         selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentSuggestions.length - 1);
+//         updateSuggestionHighlight();
+//     } else if (e.key === "ArrowUp" && isVisible) {
+//         e.preventDefault();
+//         selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+//         updateSuggestionHighlight();
+//     } else if (e.key === "Enter") {
+//         if (isVisible && selectedSuggestionIndex >= 0) {
+//             e.preventDefault();
+//             selectSuggestion(selectedSuggestionIndex);
+//         } else {
+//             hideSuggestions();
+//             doSearch(1);
+//         }
+//     } else if (e.key === "Escape") {
+//         hideSuggestions();
+//     }
+// });
+document.getElementById("q").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        if (selectedSuggestionIndex >= 0) {
             selectSuggestion(selectedSuggestionIndex);
         } else {
-            hideSuggestions();
             doSearch(1);
         }
-    } else if (e.key === "Escape") {
-        hideSuggestions();
     }
 });
-
 document.addEventListener("click", e => {
     const wrap = document.querySelector(".search-wrap");
     if (wrap && !wrap.contains(e.target)) hideSuggestions();
@@ -744,41 +774,35 @@ function doSearch(page = 1) {
     const q = document.getElementById("q").value.trim();
     const type = document.getElementById("f-type").value;
     const year = document.getElementById("f-year").value;
+    const genre = document.getElementById("f-genre")?.value;
 
-    hideSuggestions();
+    if (!q) return;
 
-    if (!q) {
-        if (page === 1) resetToHome();
-        return;
-    }
-
-    currentPage = page;
-
-    const params = new URLSearchParams({ q, page });
-    if (type) params.set("type", type);
-    if (year) params.set("year", year);
-    history.replaceState(null, "", "?" + params.toString());
-
-    loadSearchResults(q, type, year, page);
+    loadSearchResults(q, type, year, page, genre);
 }
 
-async function loadSearchResults(q, type, year, page) {
+async function loadSearchResults(q, type, year, page, genre) {
     showLoading();
 
     try {
-        const data = await searchcontents({ title: q, type, year, page });
+        const data = await searchcontents({
+            title: q,
+            type,
+            year,
+            page,
+            genre
+        });
 
         if (data.Response === "True") {
-            totalResults = parseInt(data.totalResults, 10);
+            totalResults = data.totalResults;
             renderGrid(data.Search, q, page);
         } else {
-            showState("error", "🎥", "No results found", data.error || "Try another title.");
+            showState("error", "🎥", "No results", "");
         }
-    } catch (err) {
-        showState("error", "⚠️", "Connection Error", "Backend is waking up, please wait a moment...");
+    } catch {
+        showState("error", "⚠️", "Error", "");
     }
 }
-
 
 // GRID
 
@@ -812,8 +836,10 @@ function renderGrid(contents, query, page) {
                 : posterFallbackHTML()
             }
             <div class="card-body">
-                <div class="card-year">${m.Year || "—"}</div>
-                <div class="card-title">${esc(m.Title)}</div>
+               <div class="card-year">
+        ${m.Year || "—"} • ${m.Genre ? m.Genre.split(",")[0] : ""}
+    </div>
+    <div class="card-title">${esc(m.Title)}</div>
             </div>
         `;
         grid.appendChild(card);

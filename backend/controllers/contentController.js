@@ -3,8 +3,11 @@ import { getCache, setCache } from "../utils/cache.js";
 
 
 
+import axios from "axios";
+import { getCache, setCache } from "../utils/cache.js";
+
 export const fetchMovies = async (req, res) => {
-    const { title, type, year, page } = req.query;
+    const { title, type, year, page, genre } = req.query;
 
     if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -14,7 +17,8 @@ export const fetchMovies = async (req, res) => {
         title?.toLowerCase(),
         type || "all",
         year || "all",
-        page || 1
+        page || 1,
+        genre || "all"
     ].join("-");
 
     const cached = getCache(cacheKey);
@@ -24,6 +28,7 @@ export const fetchMovies = async (req, res) => {
     }
 
     try {
+
         const response = await axios.get(process.env.API_BASE, {
             params: {
                 apikey: process.env.API_KEY,
@@ -38,15 +43,48 @@ export const fetchMovies = async (req, res) => {
             return res.status(404).json({ error: "No results found" });
         }
 
-        setCache(cacheKey, response.data, 60000); // 1 min cache
-        return res.json(response.data);
+        let movies = response.data.Search;
+
+
+        if (!genre) {
+            setCache(cacheKey, response.data, 60000);
+            return res.json(response.data);
+        }
+
+
+        const detailRequests = movies.map(movie =>
+            axios.get(process.env.API_BASE, {
+                params: {
+                    apikey: process.env.API_KEY,
+                    i: movie.imdbID
+                }
+            })
+                .then(r => r.data)
+                .catch(() => null)
+        );
+
+        const details = await Promise.all(detailRequests);
+
+        const filtered = details.filter(m =>
+            m &&
+            m.Genre &&
+            m.Genre.toLowerCase().includes(genre.toLowerCase())
+        );
+
+        const result = {
+            ...response.data,
+            Search: filtered,
+            totalResults: filtered.length
+        };
+
+        setCache(cacheKey, result, 60000);
+        return res.json(result);
 
     } catch (err) {
         console.log("fetchMovies error:", err.message);
         return res.status(500).json({ error: "Server error" });
     }
 };
-
 
 
 export const fetchMovieById = async (req, res) => {
@@ -89,7 +127,7 @@ export const fetchMovieById = async (req, res) => {
 export const getAutocomplete = async (req, res) => {
     const { q } = req.query;
 
-    // 3 harf sınırı API'yi boşuna yormaz, profesyonel bir harekettir
+    // 3 harf sınırı API'yi boşuna yormaz
     if (!q || q.length < 3) return res.json([]);
 
     const cacheKey = `auto-${q.toLowerCase()}`;
@@ -167,7 +205,7 @@ export const getTop10 = async (req, res) => {
             .sort((a, b) => parseFloat(b.imdbRating) - parseFloat(a.imdbRating))
             .slice(0, 10);
 
-        // 4️⃣ Cache
+
         setCache(cacheKey, sorted, 3600000); // 1 saat
 
         res.json(sorted);

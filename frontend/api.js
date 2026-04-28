@@ -27,9 +27,9 @@ async function handleResponse(promise) {
 }
 
 
-async function searchcontents({ title, type = "", year = "", page = 1 }) {
+async function searchcontents({ title, type = "", year = "", page = 1, genre = "" }) {
     return handleResponse(
-        api.get("/content/", { params: { title, type, year, page } })
+        api.get("/content/", { params: { title, type, year, page, genre } })
     );
 }
 
@@ -76,10 +76,9 @@ async function getCurrentUser() {
 async function fetchWatchlist() {
     return handleResponse(api.get("/user/watchlist"));
 }
-
 async function addToWatchlist(content) {
     return handleResponse(api.post("/user/watchlist", {
-        imdbID: content.imdbID,
+        imdbID: content.imdbID || content.imdbId,
         title: content.Title || content.title,
         poster: content.Poster || content.poster,
         year: content.Year || content.year,
@@ -98,7 +97,7 @@ async function fetchWatched() {
 
 async function markAsWatched(content) {
     return handleResponse(api.post("/user/watched", {
-        imdbID: content.imdbID,
+        imdbID: content.imdbID || content.imdbId,
         title: content.Title || content.title,
         poster: content.Poster || content.poster,
         year: content.Year || content.year,

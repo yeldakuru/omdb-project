@@ -1824,4 +1824,43 @@ footer::before {
     .top10-label {
         font-size: 1.1rem;
     }
+
+    .modal-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-poster-col {
+        width: 100%;
+        height: 260px;
+
+    }
+
+    .modal-poster {
+        height: 100%;
+        object-fit: cover;
+        object-position: center 20%;
+    }
+
+    .modal-content {
+        padding: 20px 16px 24px;
+    }
+
+    .modal-title {
+        font-size: 1.6rem;
+
+    }
+
+    .modal-plot {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .ratings-row {
+        gap: 10px;
+    }
 }

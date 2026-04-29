@@ -1,7 +1,3 @@
-// script.js
-// UI logic only. All HTTP calls in api.js.
-
-
 // STATE
 
 let currentPage = 1;
@@ -741,13 +737,17 @@ async function loadSearchResults(q, type, year, page, genre, displayQuery) {
     } catch (err) {
         const status = err?.response?.status;
         if (status === 401) {
-            showState("error", "🔒", "Session Expired", "Please log in again.");
+            showState("error", "🔒", "Session Expired", "Please sign in again to continue.");
         } else if (status === 429) {
-            showState("error", "⏳", "Too Many Requests", "Please wait a moment and try again.");
+            showState("error", "⏳", "Too Many Requests", "You've made too many requests. Wait a moment and try again.");
         } else if (!navigator.onLine) {
-            showState("error", "📡", "No Internet Connection", "Please check your connection and try again.");
+            showState("error", "📡", "No Internet Connection", "Check your network connection and try again.");
+        } else if (err?.message?.toLowerCase().includes("no results") || err?.message?.toLowerCase().includes("not found")) {
+            showState("not-found", "🎬", "No Results Found",
+                `We couldn't find anything matching your search. Try different keywords or remove some filters.`);
         } else {
-            showState("error", "⚠️", "Error", "Unable to reach the server. Please try again later.");
+            showState("not-found", "🎬", "No Results Found",
+                `We couldn't find what you were looking for. Try a different title, keyword, or adjust your filters.`);
         }
     }
 }

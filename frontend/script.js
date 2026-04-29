@@ -1,3 +1,5 @@
+// script.js
+// UI logic only. All HTTP calls in api.js.
 
 
 // STATE
@@ -425,7 +427,7 @@ async function toggleWatched(imdbID) {
         } else {
             const updated = await markAsWatched(content);
             userWatched = Array.isArray(updated) ? updated : (updated.watched || userWatched);
-            // backend also removes from watchlist when marking watched
+
             userWatchlist = userWatchlist.filter(m => m.imdbID !== imdbID);
         }
         refreshModalButtons(imdbID);
@@ -546,14 +548,21 @@ async function loadTop10() {
 
 async function loadTopSeries() {
     try {
-        const contents = await getTop10Series();
-        if (!Array.isArray(contents) || contents.length === 0) return;
-        renderTop10Grid(contents, "top-series-grid");
-        document.getElementById("top-series-label").style.display = "block";
+
+        const seriesItems = top10contents.filter(c =>
+            (c.Type || c.type || "").toLowerCase() === "series"
+        );
+
+        if (seriesItems.length > 0) {
+            renderTop10Grid(seriesItems, "top-series-grid");
+            document.getElementById("top-series-label").style.display = "block";
+        }
+
     } catch (err) {
         console.error("Top series error:", err);
     }
 }
+
 function renderTop10Grid(contents, gridId) {
     const grid = document.getElementById(gridId);
     if (!grid) return;
@@ -695,12 +704,17 @@ function doSearch(page = 1) {
     const year = document.getElementById("f-year").value;
     const genre = document.getElementById("f-genre")?.value;
 
-    if (!q) return;
+    // Arama çubuğu boş olsa bile type veya genre seçilmişse arama yap
+    const searchQuery = q || type || genre || year;
+    if (!searchQuery) return;
 
-    loadSearchResults(q, type, year, page, genre);
+    // Sorgu yoksa ama filtre varsa varsayılan geniş terim kullan
+    const effectiveQuery = q || (type === "series" ? "the" : "movie");
+
+    loadSearchResults(effectiveQuery, type, year, page, genre, q);
 }
 
-async function loadSearchResults(q, type, year, page, genre) {
+async function loadSearchResults(q, type, year, page, genre, displayQuery) {
     showLoading();
 
     try {
@@ -708,14 +722,33 @@ async function loadSearchResults(q, type, year, page, genre) {
 
         if (data.Response === "True") {
             totalResults = data.totalResults;
-            renderGrid(data.Search, q, page);
+            renderGrid(data.Search, displayQuery || q, page);
         } else {
-            showState("error", "🎬", "No Results Found",
-                `We couldn't find anything matching "<strong>${esc(q)}</strong>". Try a different title or remove filters.`);
+            const queryText = displayQuery || q;
+            const filterText = [
+                type ? `type: <strong>${type}</strong>` : "",
+                genre ? `genre: <strong>${genre}</strong>` : "",
+                year ? `year: <strong>${year}</strong>` : ""
+            ].filter(Boolean).join(", ");
+
+            showState("not-found", "🎬",
+                "Content Not Found",
+                queryText
+                    ? `"<strong>${esc(queryText)}</strong>" yielded no results.${filterText ? ` Filters: ${filterText}` : ""} Try a different search.`
+                    : `No results found for the selected filters (${filterText}). Try changing your filters.`
+            );
         }
-    } catch {
-        showState("error", "⚠️", "Something Went Wrong",
-            "We couldn't reach the server. Please check your connection and try again.");
+    } catch (err) {
+        const status = err?.response?.status;
+        if (status === 401) {
+            showState("error", "🔒", "Session Expired", "Please log in again.");
+        } else if (status === 429) {
+            showState("error", "⏳", "Too Many Requests", "Please wait a moment and try again.");
+        } else if (!navigator.onLine) {
+            showState("error", "📡", "No Internet Connection", "Please check your connection and try again.");
+        } else {
+            showState("error", "⚠️", "Error", "Unable to reach the server. Please try again later.");
+        }
     }
 }
 
@@ -744,12 +777,20 @@ function renderGrid(contents, query, page) {
         card.onclick = () => openModal(m.imdbID);
 
         const hasPoster = m.Poster && m.Poster !== "N/A";
+        const inWL = isInWatchlist(m.imdbID);
         card.innerHTML = `
-            ${hasPoster
+            <div class="card-poster-wrap">
+                ${hasPoster
                 ? `<img class="card-poster" src="${m.Poster}" alt="${esc(m.Title)}"
                     loading="lazy" onerror="this.replaceWith(posterFallback())">`
                 : posterFallbackHTML()
             }
+                <button class="card-wl-btn ${inWL ? "active" : ""}"
+                    title="${inWL ? "Watchlist'ten çıkar" : "Watchlist'e ekle"}"
+                    data-imdbid="${m.imdbID}">
+                    ${inWL ? "✓" : "+"}
+                </button>
+            </div>
             <div class="card-body">
                 <div class="card-year">
                     ${m.Year || "—"} • ${m.Genre ? m.Genre.split(",")[0] : ""}
@@ -757,6 +798,22 @@ function renderGrid(contents, query, page) {
                 <div class="card-title">${esc(m.Title)}</div>
             </div>
         `;
+
+        card.querySelector(".card-wl-btn").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            if (!currentUser) { openAuthModal("login"); return; }
+            const btn = e.currentTarget;
+            const id = btn.dataset.imdbid;
+            const tempContent = { imdbID: id, Title: m.Title, Poster: m.Poster, Year: m.Year, Type: m.Type };
+            currentModalContent = tempContent;
+            await toggleWatchlist(id);
+            const nowIn = isInWatchlist(id);
+            btn.textContent = nowIn ? "✓" : "+";
+            btn.classList.toggle("active", nowIn);
+            btn.title = nowIn ? "Watchlist'ten çıkar" : "Watchlist'e ekle";
+            currentModalContent = null;
+        });
+
         grid.appendChild(card);
     });
 
@@ -801,6 +858,7 @@ function renderPagination(page) {
 
 
 // LOADING / ERROR STATES
+
 function showLoading() {
     const top10 = document.getElementById("top10-section");
     if (top10) top10.style.display = "none";
@@ -809,7 +867,7 @@ function showLoading() {
     document.getElementById("state-area").innerHTML = `
         <div class="state-loading">
             <div class="loader"><span></span><span></span><span></span></div>
-            <p class="state-sub">Searching the archives…</p>
+            <p class="state-sub">Archives are being scanned…</p>
         </div>
     `;
 }
@@ -820,13 +878,21 @@ function showState(type, icon, title, sub) {
     document.getElementById("hero").classList.add("compact");
     document.getElementById("results-section").hidden = true;
     document.getElementById("state-area").innerHTML = `
-        <div class="state-${type}">
+        <div class="state-box state-${type}">
             <span class="state-icon">${icon}</span>
             <div class="state-title">${title}</div>
             <p class="state-sub">${sub}</p>
+            <button class="state-retry-btn" onclick="document.getElementById('q').focus(); resetStateArea()">
+                Make New Search
+            </button>
         </div>
     `;
 }
+
+function resetStateArea() {
+    document.getElementById("state-area").innerHTML = "";
+}
+
 
 // MOVIE DETAIL MODAL
 

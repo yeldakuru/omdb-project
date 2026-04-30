@@ -1633,7 +1633,7 @@ header {
 ===================== */
 footer {
     position: relative;
-    margin-top: 40px;
+    margin-top: 10px;
 }
 
 footer::before {
@@ -1662,7 +1662,7 @@ footer::before {
 }
 
 .footer::before {
-    content: '🎬';
+
     font-size: 1rem;
     filter: grayscale(0.3);
 }

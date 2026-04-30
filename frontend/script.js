@@ -699,7 +699,7 @@ function doSearch(page = 1) {
     if (!searchQuery) return;
 
     // Sorgu yoksa ama filtre varsa varsayılan geniş terim kullan
-    const effectiveQuery = q || (type === "series" ? "the" : "movie");
+    // const effectiveQuery = q || (type === "series" ? "the" : "movie");
 
     loadSearchResults(effectiveQuery, type, year, page, genre, q);
 }

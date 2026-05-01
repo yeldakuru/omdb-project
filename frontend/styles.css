@@ -1864,3 +1864,45 @@ footer::before {
         gap: 10px;
     }
 }
+
+.top-card-wl-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(10, 10, 12, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.8) translateY(3px);
+    transition: opacity 0.18s ease, transform 0.18s ease,
+        background 0.15s, border-color 0.15s;
+    backdrop-filter: blur(6px);
+    z-index: 4;
+}
+
+.top-card:hover .top-card-wl-btn {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+.top-card-wl-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0c;
+}
+
+.top-card-wl-btn.active {
+    background: rgba(232, 184, 75, 0.18);
+    border-color: var(--accent);
+    color: var(--accent);
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}

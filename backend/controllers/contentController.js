@@ -23,13 +23,13 @@ export const fetchMovies = async (req, res) => {
     }
 
     try {
-
         const response = await axios.get(process.env.API_BASE, {
             params: {
                 apikey: process.env.API_KEY,
                 s: title,
-                type,
-                y: year,
+
+                ...(type && ["movie", "series", "episode"].includes(type) ? { type } : {}),
+                ...(year ? { y: year } : {}),
                 page: page || 1
             }
         });
@@ -40,19 +40,15 @@ export const fetchMovies = async (req, res) => {
 
         let movies = response.data.Search;
 
-
         if (!genre) {
             setCache(cacheKey, response.data, 60000);
             return res.json(response.data);
         }
 
-
+        // Genre filtering — fetch details for each result
         const detailRequests = movies.map(movie =>
             axios.get(process.env.API_BASE, {
-                params: {
-                    apikey: process.env.API_KEY,
-                    i: movie.imdbID
-                }
+                params: { apikey: process.env.API_KEY, i: movie.imdbID }
             })
                 .then(r => r.data)
                 .catch(() => null)
@@ -80,7 +76,6 @@ export const fetchMovies = async (req, res) => {
         return res.status(500).json({ error: "Server error" });
     }
 };
-
 
 export const fetchMovieById = async (req, res) => {
     const { id } = req.params;

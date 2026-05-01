@@ -561,17 +561,40 @@ function renderTop10Grid(contents, gridId) {
         const poster = c.Poster || c.poster;
         const hasPoster = poster && poster !== "N/A";
         const id = c.imdbID || c.imdbId;
+        const inWL = isInWatchlist(id);
         return `
             <div class="top-card" onclick="openModal('${id}')">
                 <div class="rank">#${i + 1}</div>
                 ${hasPoster
                 ? `<img src="${esc(poster)}" alt="${esc(c.Title || c.title || '')}" loading="lazy"
-                        onerror="this.style.display='none'; this.parentElement.classList.add('no-poster')">`
+                           onerror="this.style.display='none'; this.parentElement.classList.add('no-poster')">`
                 : `<div class="top-card-fallback">${posterFallbackHTML()}</div>`
             }
+                <button class="top-card-wl-btn ${inWL ? 'active' : ''}"
+                    data-id="${id}"
+                    data-title="${esc(c.Title || c.title || '')}"
+                    data-poster="${esc(poster || '')}"
+                    data-year="${esc(c.Year || c.year || '')}"
+                    data-type="${esc(c.Type || c.type || '')}"
+                    title="${inWL ? 'Remove from Watchlist' : 'Add to Watchlist'}"
+                    onclick="event.stopPropagation(); handleTopCardWL(this)">
+                    ${inWL ? '✓' : '+'}
+                </button>
             </div>
         `;
     }).join("");
+}
+
+async function handleTopCardWL(btn) {
+    if (!currentUser) { openAuthModal("login"); return; }
+    const { id, title, poster, year, type } = btn.dataset;
+    currentModalContent = { imdbID: id, Title: title, Poster: poster, Year: year, Type: type };
+    await toggleWatchlist(id);
+    const nowIn = isInWatchlist(id);
+    btn.textContent = nowIn ? "✓" : "+";
+    btn.classList.toggle("active", nowIn);
+    btn.title = nowIn ? "Remove from Watchlist" : "Add to Watchlist";
+    currentModalContent = null;
 }
 
 
@@ -694,12 +717,16 @@ function doSearch(page = 1) {
     const year = document.getElementById("f-year").value;
     const genre = document.getElementById("f-genre")?.value;
 
-    // Arama çubuğu boş olsa bile type veya genre seçilmişse arama yap
-    const searchQuery = q || type || genre || year;
-    if (!searchQuery) return;
+    const hasFilter = type || genre || year;
+    if (!q && !hasFilter) return;
 
-    // Sorgu yoksa ama filtre varsa varsayılan geniş terim kullan
-    const effectiveQuery = q || (type === "series" ? "the" : "movie");
+    let effectiveQuery = q;
+    if (!q) {
+        if (type === "series") effectiveQuery = "love";
+        else if (type === "episode") effectiveQuery = "the";
+        else if (genre) effectiveQuery = genre;
+        else effectiveQuery = "the";
+    }
 
     loadSearchResults(effectiveQuery, type, year, page, genre, q);
 }
@@ -707,6 +734,13 @@ function doSearch(page = 1) {
 async function loadSearchResults(q, type, year, page, genre, displayQuery) {
     showLoading();
 
+    const params = new URLSearchParams();
+    if (displayQuery) params.set("q", displayQuery);
+    if (type) params.set("type", type);
+    if (year) params.set("year", year);
+    if (genre) params.set("genre", genre);
+    if (page > 1) params.set("page", page);
+    history.replaceState(null, "", "?" + params.toString());
     try {
         const data = await searchcontents({ title: q, type, year, page, genre });
 
@@ -758,7 +792,16 @@ function renderGrid(contents, query, page) {
     document.getElementById("state-area").innerHTML = "";
     if (top10) top10.style.display = "none";
 
-    document.getElementById("results-title").textContent = `"${query}"`;
+    const titleParts = [];
+    if (query) titleParts.push(`"${query}"`);
+    if (!query) {
+        const type = document.getElementById("f-type").value;
+        const genre = document.getElementById("f-genre")?.value;
+        if (type) titleParts.push(type.charAt(0).toUpperCase() + type.slice(1) + "s");
+        if (genre) titleParts.push(genre);
+        if (!titleParts.length) titleParts.push("Results");
+    }
+    document.getElementById("results-title").textContent = titleParts.join(" · ");
     document.getElementById("results-count").textContent =
         `${totalResults.toLocaleString()} result${totalResults !== 1 ? "s" : ""} — page ${page}`;
 
@@ -780,7 +823,7 @@ function renderGrid(contents, query, page) {
                 : posterFallbackHTML()
             }
                 <button class="card-wl-btn ${inWL ? "active" : ""}"
-                    title="${inWL ? "Watchlist'ten çıkar" : "Watchlist'e ekle"}"
+                    title="${inWL ? "Remove from Watchlist" : "Add to Watchlist"}"
                     data-imdbid="${m.imdbID}">
                     ${inWL ? "✓" : "+"}
                 </button>
@@ -804,7 +847,7 @@ function renderGrid(contents, query, page) {
             const nowIn = isInWatchlist(id);
             btn.textContent = nowIn ? "✓" : "+";
             btn.classList.toggle("active", nowIn);
-            btn.title = nowIn ? "Watchlist'ten çıkar" : "Watchlist'e ekle";
+            btn.title = nowIn ? "Remove from Watchlist" : "Add to Watchlist";
             currentModalContent = null;
         });
 
@@ -1010,15 +1053,23 @@ function resetToHome() {
 (function restoreFromURL() {
     const params = new URLSearchParams(location.search);
     const q = params.get("q");
-    if (!q) return;
+    const type = params.get("type") || "";
+    const year = params.get("year") || "";
+    const genre = params.get("genre") || "";
+    const page = parseInt(params.get("page"), 10) || 1;
 
-    document.getElementById("q").value = q;
-    document.getElementById("f-type").value = params.get("type") || "";
-    document.getElementById("f-year").value = params.get("year") || "";
-    doSearch(parseInt(params.get("page"), 10) || 1);
+    if (!q && !type && !year && !genre) return;
+
+    document.getElementById("q").value = q || "";
+    document.getElementById("f-type").value = type;
+    document.getElementById("f-year").value = year;
+
+    const genreEl = document.getElementById("f-genre");
+    if (genreEl) genreEl.value = genre;
+
+    doSearch(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
 })();
-
 
 // INIT
 
